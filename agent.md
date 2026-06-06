@@ -97,6 +97,7 @@ Current workstreams:
 
 Work log:
 
+- 2026-06-06, frontend/main: Removed the post-hero pipeline rail and feature-card block from the landing page to simplify the first-page flow.
 - 2026-06-06, frontend/deployment: Added deterministic lightweight scoring to the Vercel audit shim so different submitted websites no longer all return 82.
 - 2026-06-06, frontend/main: Realigned the desktop hero pipeline so agent-ready output cards sit to the right of the connector lines with short code-style previews.
 - 2026-06-06, frontend/deployment: Added Vercel API shim endpoints for health and MVP audit responses so the deployed audit dashboard receives JSON instead of the SPA fallback.

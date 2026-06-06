@@ -345,8 +345,6 @@ function Platform() {
         </div>
         <HeroVisual />
       </section>
-      <PipelineRail />
-      <FeatureCards />
       <DemoBand />
     </>
   );
