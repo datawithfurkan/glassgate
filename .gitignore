@@ -8,3 +8,8 @@ build/
 coverage/
 *.log
 .vercel
+
+# Generated site artifacts — except the demo fixture
+generated/
+!generated/demo-glasgate/
+!generated/demo-glasgate/**
