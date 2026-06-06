@@ -63,6 +63,10 @@ npm run install:server
 ### Run
 
 ```bash
+# Beide zusammen (empfohlen)
+npm run dev:all
+
+# Oder getrennt:
 # Terminal 1 — Backend (port 3001)
 npm run dev:server
 
