@@ -65,7 +65,7 @@ export function AppShell({
       )}
 
       <aside className="audit-sidebar premium-sidebar">
-        <button type="button" className="logo" onClick={() => { goToAppPage("overview"); setSidebarOpen(false); }}>
+        <button type="button" className="logo" onClick={() => { goToHome(); setSidebarOpen(false); }}>
           <LogoMark />
           <span>glassgate.app</span>
         </button>
