@@ -326,14 +326,13 @@ h1 span,
 .hero-visual {
   position: relative;
   display: grid;
-  grid-template-columns: 180px 170px 190px 210px;
+  grid-template-columns: 146px 82px 154px 92px 252px;
   align-items: center;
-  min-height: 390px;
+  min-height: 430px;
 }
 
 .source-card,
 .processor,
-.output-row,
 .feature-card,
 .pipeline-rail,
 .demo-band,
@@ -457,24 +456,24 @@ h1 span,
 .connector {
   position: relative;
   z-index: 2;
-  width: 190px;
-  height: 290px;
+  width: 92px;
+  height: 372px;
   overflow: visible;
 }
 
 .connector.left {
-  margin-left: -18px;
-  margin-right: -42px;
+  width: 82px;
+  margin-left: -7px;
+  margin-right: -8px;
 }
 
 .connector.right {
-  margin-left: -24px;
-  margin-right: -22px;
+  margin-left: -10px;
+  margin-right: -8px;
 }
 
 .dash-line {
   fill: none;
-  stroke: url(#none);
   stroke: #6f69ff;
   stroke-width: 2;
   stroke-linecap: round;
@@ -490,20 +489,40 @@ h1 span,
   animation: pulse 1.8s ease-in-out infinite;
 }
 
+.connector.right .dash-line {
+  stroke: var(--green);
+}
+
+.connector.right .pulse-dot {
+  fill: var(--green);
+  filter: drop-shadow(0 0 8px rgba(37, 189, 85, 0.55));
+}
+
 .output-stack {
   z-index: 4;
   display: grid;
-  gap: 12px;
+  gap: 14px;
+  width: 252px;
+  align-self: center;
 }
 
-.output-row {
-  display: grid;
-  grid-template-columns: 44px 1fr 22px;
-  align-items: center;
-  gap: 12px;
-  width: 196px;
-  min-height: 62px;
-  padding: 10px 12px;
+.output-stack h3 {
+  margin: 0 0 2px;
+  color: #171c31;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.output-card {
+  min-height: 112px;
+  padding: 14px 16px;
+  border: 1px solid rgba(15, 25, 42, 0.1);
+  border-radius: 8px;
+  color: #dfeef0;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0)),
+    #0e1824;
+  box-shadow: 0 20px 48px rgba(17, 28, 46, 0.14);
   animation-delay: var(--d);
 }
 
@@ -523,23 +542,28 @@ h1 span,
   border-radius: 7px;
 }
 
-.output-row strong,
-.output-row small {
+.output-card strong,
+.output-card span {
   display: block;
 }
 
-.output-row strong {
-  font-size: 13px;
+.output-card strong {
+  color: #68a8ff;
+  font-size: 15px;
 }
 
-.output-row small {
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: 12px;
+.output-card span {
+  margin-top: 4px;
+  color: #9eb0bd;
+  font-size: 11px;
 }
 
-.output-row > svg {
-  color: var(--green);
+.output-card pre {
+  margin: 12px 0 0;
+  color: #d7eadf;
+  font: 11px/1.55 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  letter-spacing: 0;
+  white-space: pre-wrap;
 }
 
 .float-a,
@@ -1798,8 +1822,7 @@ kbd {
 
   .source-card,
   .processor,
-  .output-stack,
-  .output-row {
+  .output-stack {
     width: 100%;
   }
 
@@ -1929,10 +1952,10 @@ kbd {
 
 .hero-visual {
   isolation: isolate;
-  grid-template-columns: 170px 124px 174px 208px;
+  grid-template-columns: 146px 82px 154px 92px 252px;
   justify-content: end;
   gap: 0;
-  min-height: 410px;
+  min-height: 452px;
   padding: 18px 0;
   overflow: visible;
 }
@@ -1950,13 +1973,13 @@ kbd {
 
 .source-card {
   align-self: center;
-  width: 172px;
-  min-height: 224px;
+  width: 146px;
+  min-height: 214px;
 }
 
 .processor {
-  width: 168px;
-  min-height: 178px;
+  width: 154px;
+  min-height: 170px;
 }
 
 .processor .logo-mark {
@@ -1965,27 +1988,23 @@ kbd {
 }
 
 .connector {
-  width: 132px;
+  width: 92px;
 }
 
 .connector.left {
-  margin-left: -2px;
-  margin-right: -6px;
+  width: 82px;
+  margin-left: -7px;
+  margin-right: -8px;
 }
 
 .connector.right {
-  margin-left: -5px;
-  margin-right: -12px;
+  margin-left: -10px;
+  margin-right: -8px;
 }
 
 .output-stack {
   align-self: center;
-  width: 208px;
-}
-
-.output-row {
-  width: 100%;
-  min-height: 58px;
+  width: 252px;
 }
 
 .trust-row {
@@ -2126,7 +2145,27 @@ kbd {
   }
 
   .hero-visual {
-    grid-template-columns: 158px 108px 160px 196px;
+    grid-template-columns: 136px 70px 144px 78px 232px;
+  }
+
+  .source-card {
+    width: 136px;
+  }
+
+  .processor {
+    width: 144px;
+  }
+
+  .output-stack {
+    width: 232px;
+  }
+
+  .output-card {
+    padding: 12px 14px;
+  }
+
+  .output-card pre {
+    font-size: 10px;
   }
 }
 
@@ -2153,7 +2192,7 @@ kbd {
   }
 
   .hero-visual {
-    grid-template-columns: 172px 130px 172px 208px;
+    grid-template-columns: 140px 76px 148px 82px 242px;
     justify-content: center;
     width: min(780px, 100%);
     margin: 0 auto;
@@ -2234,6 +2273,10 @@ kbd {
 
   .output-stack {
     grid-template-columns: 1fr;
+  }
+
+  .output-card {
+    min-height: 96px;
   }
 
   .connector {
@@ -2347,7 +2390,7 @@ kbd {
     min-height: 190px;
   }
 
-  .output-row {
+  .output-card {
     min-height: 54px;
   }
 

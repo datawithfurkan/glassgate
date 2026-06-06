@@ -97,6 +97,8 @@ Current workstreams:
 
 Work log:
 
+- 2026-06-06, frontend/deployment: Added deterministic lightweight scoring to the Vercel audit shim so different submitted websites no longer all return 82.
+- 2026-06-06, frontend/main: Realigned the desktop hero pipeline so agent-ready output cards sit to the right of the connector lines with short code-style previews.
 - 2026-06-06, frontend/deployment: Added Vercel API shim endpoints for health and MVP audit responses so the deployed audit dashboard receives JSON instead of the SPA fallback.
 - 2026-06-06, frontend/main: Corrected frontend brand text to glassgate.app and made the audit sidebar logo navigate back to the landing page.
 - 2026-06-06, frontend/main: Updated the How it works animation to show two masked storefront captures converting into clipped llms.txt/page.json content inside each moving card.

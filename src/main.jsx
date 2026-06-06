@@ -78,11 +78,21 @@ const pipeline = [
 ];
 
 const outputs = [
-  ["pages.json", "Structured", Braces],
-  ["content.md", "Cleaned", FileText],
-  ["faqs.json", "Structured", FileJson],
-  ["products.json", "Structured", PackageCheck],
-  ["llms.txt", "Generated", ClipboardList]
+  {
+    name: "pages.json",
+    label: "Structured map",
+    lines: ["{", "  \"pages\": 12,", "  \"agentReady\": true", "}"]
+  },
+  {
+    name: "content.md",
+    label: "Clean content",
+    lines: ["# Product guide", "- Pricing", "- FAQs"]
+  },
+  {
+    name: "llms.txt",
+    label: "Public AI source map",
+    lines: ["# Agent source map", "/docs", "/pricing"]
+  }
 ];
 
 const cards = [
@@ -268,44 +278,45 @@ function Processor() {
 
 function OutputStack({ mode }) {
   const rows = mode === "commerce"
-    ? [["Product", "Structured", PackageCheck], ["Offer", "Structured", FileJson], ["Reviews", "Structured", Sparkles], ["Shipping", "Structured", Rocket], ["FAQPage", "Structured", CircleHelp]]
+    ? [
+        { name: "products.json", label: "Catalog data", lines: ["{", "  \"products\": 48,", "  \"offers\": true", "}"] },
+        { name: "content.md", label: "Clean copy", lines: ["# Storefront", "- Categories", "- Policies"] },
+        { name: "llms.txt", label: "AI source map", lines: ["# Commerce map", "/products", "/shipping"] }
+      ]
     : outputs;
 
   return (
-    <div className="output-stack">
-      {rows.map(([name, status, Icon], index) => (
-        <div className="output-row float-c" style={{ "--d": `${index * 0.08}s` }} key={name}>
-          <span className="icon-tile">
-            <Icon size={20} />
-          </span>
-          <div>
-            <strong>{name}</strong>
-            <small>{status}</small>
-          </div>
-          <Check size={18} />
-        </div>
+    <div className="output-stack" aria-label="Agent-ready outputs">
+      <h3>Agent-ready outputs</h3>
+      {rows.map(({ name, label, lines }, index) => (
+        <article className="output-card float-c" style={{ "--d": `${index * 0.08}s` }} key={name}>
+          <strong>{name}</strong>
+          <span>{label}</span>
+          <pre>{lines.join("\n")}</pre>
+        </article>
       ))}
     </div>
   );
 }
 
 function Connector({ side }) {
-  const reverse = side === "right";
+  const isRight = side === "right";
+  const targets = isRight ? [90, 216, 342] : [186];
   return (
-    <svg className={`connector ${side}`} viewBox="0 0 240 290" aria-hidden="true">
-      {[0, 1, 2, 3, 4].map((line) => (
+    <svg className={`connector ${side}`} viewBox="0 0 240 372" aria-hidden="true">
+      {targets.map((targetY, line) => (
         <path
-          key={line}
+          key={targetY}
           className="dash-line"
           style={{ "--i": line }}
-          d={
-            reverse
-              ? `M 10 145 C 78 145, 92 ${42 + line * 52}, 226 ${42 + line * 52}`
-              : `M 18 145 C 96 145, 128 ${145}, 224 ${145}`
-          }
+          d={isRight
+            ? `M 12 186 C 82 186, 112 ${targetY}, 226 ${targetY}`
+            : "M 18 186 C 82 186, 134 186, 224 186"}
         />
       ))}
-      <circle className="pulse-dot" cx={reverse ? 10 : 224} cy="145" r="6" />
+      {targets.map((targetY) => (
+        <circle className="pulse-dot" key={targetY} cx={isRight ? 226 : 224} cy={targetY} r="5" />
+      ))}
     </svg>
   );
 }
