@@ -197,7 +197,8 @@ async function testGeneratedFiles(auditResult) {
     const pageJson = await jsonRes.json();
     assert("page.json has url", !!pageJson.url);
     assert("page.json has headings array", Array.isArray(pageJson.headings));
-    assert("page.json has agentRepresentation", !!pageJson.agentRepresentation);
+    assert("page.json has metadata.contentHash", !!pageJson.metadata?.contentHash);
+    assert("page.json has content.markdownUrl", !!pageJson.content?.markdownUrl);
   }
 }
 

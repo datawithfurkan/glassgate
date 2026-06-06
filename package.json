@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "dev:server": "node --watch server/index.js",
+    "dev:all": "npm run dev:server & sleep 1 && npm run dev",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1",
     "start:server": "node server/index.js",

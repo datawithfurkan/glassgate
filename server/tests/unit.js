@@ -13,6 +13,9 @@ import { generateLlmsTxt } from "../lib/generators/llmsTxt.js";
 import { generateMarkdown } from "../lib/generators/markdown.js";
 import { generatePageJson } from "../lib/generators/json.js";
 import { normalizePage } from "../lib/normalizer.js";
+import { isCrawlableUrl, filterDiscoveredUrls } from "../lib/urlFilter.js";
+import { scoreUrl, selectCrawlQueue, detectPageType } from "../lib/urlRanker.js";
+import { buildCrawlQueue } from "../lib/sitemap.js";
 
 let passed = 0;
 let failed = 0;
@@ -154,12 +157,12 @@ assert("markdown has frontmatter", md.startsWith("---"));
 assert("markdown has title field", md.includes("title:"));
 assert("markdown has url field", md.includes("url:"));
 assert("markdown has H1", md.includes("# Example Domain"));
-assert("markdown has links section", md.includes("## Links"));
+assert("markdown has source section", md.includes("## Source"));
 
 const json = generatePageJson(page, "example-com", "home");
 assert("page.json has url", json.url === "https://example.com/");
-assert("page.json has contentHash", typeof json.contentHash === "string" && json.contentHash.length > 0);
-assert("page.json has agentRepresentation", !!json.agentRepresentation?.markdownUrl);
+assert("page.json has metadata.contentHash", typeof json.metadata?.contentHash === "string");
+assert("page.json has type field", typeof json.type === "string");
 assert("page.json has generator field", json.generator === "glasgate.ai");
 
 const siteData = {
@@ -171,9 +174,38 @@ const siteData = {
 };
 const llms = generateLlmsTxt(siteData, "example-com");
 assert("llms.txt starts with #", llms.trim().startsWith("#"));
-assert("llms.txt has Core Pages section", llms.includes("## Core Pages"));
-assert("llms.txt has Agent-readable Mirrors", llms.includes("## Agent-readable Mirrors"));
+assert("llms.txt has Important Pages section", llms.includes("## Important Pages"));
+assert("llms.txt has AI-readable Files", llms.includes("## AI-readable Files"));
 assert("llms.txt references glasgate.ai", llms.includes("glasgate.ai"));
+
+// ─── urlFilter / urlRanker ────────────────────────────────────────────────────
+
+console.log("\n── urlFilter.js / urlRanker.js ──────────────────");
+
+assert("login URL blocked", isCrawlableUrl("https://example.com/login", "https://example.com") === false);
+assert("cart URL blocked", isCrawlableUrl("https://example.com/cart", "https://example.com") === false);
+assert("filter query blocked", isCrawlableUrl("https://example.com/products?filter=red", "https://example.com") === false);
+assert("about page allowed", isCrawlableUrl("https://example.com/about", "https://example.com") === true);
+assert("pricing page allowed", isCrawlableUrl("https://example.com/pricing", "https://example.com") === true);
+
+const filtered = filterDiscoveredUrls([
+  "https://example.com/",
+  "https://example.com/pricing",
+  "https://example.com/login",
+  "https://example.com/cart",
+], "https://example.com");
+assert("filter removes login/cart", filtered.length === 2, `${filtered.length} urls`);
+
+assert("homepage scores highest", scoreUrl("https://example.com/", "https://example.com") > scoreUrl("https://example.com/blog/old-post", "https://example.com"));
+assert("pricing type detected", detectPageType("https://example.com/pricing", "https://example.com") === "pricing");
+
+const queue = buildCrawlQueue("https://example.com", [
+  "https://example.com/blog/old",
+  "https://example.com/pricing",
+  "https://example.com/login",
+], ["https://example.com/contact"], 3);
+assert("value queue respects max pages", queue.queue.length <= 3, `${queue.queue.length}`);
+assert("value queue includes homepage", queue.queue.some((u) => u.includes("example.com")));
 
 // ─── Results ──────────────────────────────────────────────────────────────────
 

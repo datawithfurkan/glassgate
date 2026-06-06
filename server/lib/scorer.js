@@ -10,7 +10,10 @@ export function scoreSite(pages, siteChecks) {
   if (siteChecks.sitemapXml) {
     score += 15;
   } else {
-    issues.push({ severity: "warning", message: "No sitemap.xml found — agents may miss pages" });
+    issues.push({
+      severity: "warning",
+      message: "No sitemap.xml found. Recommendation: create sitemap.xml with canonical public URLs.",
+    });
   }
 
   // +10 robots.txt found
