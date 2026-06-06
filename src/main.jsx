@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   ArrowRight,
@@ -35,6 +35,7 @@ import {
   Target,
   Zap
 } from "lucide-react";
+import ecommerceMaskedFront from "./assets/ecommerce-masked-front.png";
 import "./styles.css";
 
 const navItems = [
@@ -145,26 +146,42 @@ const demoAudit = {
 };
 
 const motionCodeLines = [
-  "<h1>Agent-ready product data</h1>",
-  "<nav><a href='/docs'>Docs</a></nav>",
-  "<p>Clean page content, no chrome.</p>",
-  "{ title, description, faq, pricing }",
+  "<!-- original website content -->",
+  "<header><nav>Products Docs Pricing</nav></header>",
+  "<h1>Business content built for humans</h1>",
+  "<p>Pages, docs, support copy, pricing, FAQs.</p>",
+  "<section data-crawl='true'>",
+  "  <article>Product details and updates</article>",
+  "  <aside>Navigation, chrome, tracking</aside>",
+  "</section>",
+  "<footer>Legal, social, duplicated links</footer>"
+];
+
+const motionIndexLines = [
+  "<!-- GlassGate agent mirror -->",
+  "title: Business content built for humans",
   "canonical: https://example.com/",
-  "llms.txt -> markdown corpus",
-  "ai-index.json -> searchable map",
-  "tokens: 18,420 -> 4,620"
+  "format: markdown + json",
+  "llms.txt: generated",
+  "ai-index.json: searchable",
+  "tokens: original -> compressed",
+  "status: agent readable"
 ];
 
 const motionOutputRows = [
-  [FileText, "llms.txt", "Published"],
-  [FileJson, "ai-index.json", "Structured"],
-  [Braces, "pages.json", "Queryable"],
-  [Bot, "Agent API", "Ready"]
+  ["llms.txt", "Markdown mirror"],
+  ["ai-index.json", "Search map"],
+  ["pages.json", "Structured pages"],
+  ["Agent API", "Ready"]
 ];
 
-const motionParticles = Array.from({ length: 84 }, (_, index) => ({
-  "--x": `${(index % 12) * 10 - 48}px`,
-  "--y": `${Math.floor(index / 12) * 22 - 80}px`,
+const motionCapturedPages = [
+  { image: ecommerceMaskedFront, label: "Masked ecommerce front page capture" }
+];
+
+const motionParticles = Array.from({ length: 170 }, (_, index) => ({
+  "--x": `${(index % 17) * 12 - 96}px`,
+  "--y": `${Math.floor(index / 17) * 20 - 104}px`,
   "--d": `${(index % 17) * 0.09}s`,
   "--s": `${2 + (index % 4)}px`,
   "--o": `${0.34 + (index % 5) * 0.1}`
@@ -521,12 +538,7 @@ function MiniDashboard() {
 function HowItWorks() {
   return (
     <>
-      <section className="simple-hero page-shell" id="how-it-works">
-        <div>
-          <div className="pill"><Sparkles size={15} /> How it works</div>
-          <h1>From website to structured agent data.</h1>
-          <p>Five steps. One clean pipeline.</p>
-        </div>
+      <section className="motion-scroll-section" id="how-it-works" aria-label="Website to agent-ready data animation">
         <AgentMotionGraphic />
       </section>
       <ArchitectureStrip />
@@ -535,50 +547,95 @@ function HowItWorks() {
 }
 
 function AgentMotionGraphic() {
+  const motionRef = useRef(null);
+  const animationStartRef = useRef(0);
+  const [reductionPercent, setReductionPercent] = useState(0);
+
+  useEffect(() => {
+    let frameId;
+    let isVisible = false;
+    const duration = 7600;
+    const holdMs = 700;
+
+    animationStartRef.current = performance.now();
+
+    const tick = (time) => {
+      const elapsed = (time - animationStartRef.current) % duration;
+      const activeDuration = duration - holdMs * 2;
+      const activeElapsed = Math.max(0, Math.min(activeDuration, elapsed - holdMs));
+      const phase = activeElapsed / activeDuration;
+      const wave = phase <= 0.5 ? phase * 2 : (1 - phase) * 2;
+      setReductionPercent(elapsed < holdMs || elapsed > duration - holdMs ? 0 : Math.round(wave * 100));
+      frameId = window.requestAnimationFrame(tick);
+    };
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !isVisible) {
+          isVisible = true;
+          animationStartRef.current = performance.now();
+          setReductionPercent(0);
+        } else if (!entry.isIntersecting) {
+          isVisible = false;
+        }
+      },
+      { threshold: 0.45 }
+    );
+
+    if (motionRef.current) observer.observe(motionRef.current);
+    frameId = window.requestAnimationFrame(tick);
+    return () => {
+      observer.disconnect();
+      window.cancelAnimationFrame(frameId);
+    };
+  }, []);
+
   return (
-    <div className="agent-motion" aria-label="Animated transformation from website content to agent-ready files">
-      <div className="motion-pipeline">
-        {pipeline.slice(0, 4).map(({ icon: Icon, title }, index) => (
-          <span key={title} style={{ "--n": index }}>
-            <Icon size={16} />
-            {title}
-          </span>
-        ))}
+    <div ref={motionRef} className="agent-motion" aria-label="Animated transformation from website content to agent-ready files">
+      <div className="motion-stat motion-stat-left">
+        <span>Original website</span>
+        <strong>18,420 tokens</strong>
+      </div>
+      <div className="motion-stat motion-stat-right">
+        <span>Agent-ready mirror</span>
+        <strong>4,620 tokens</strong>
       </div>
       <div className="motion-stage">
-        <div className="motion-code">
+        <div className="motion-code motion-code-left">
           {motionCodeLines.map((line, index) => (
             <span key={`${line}-${index}`} style={{ "--n": index }}>
               {line}
             </span>
           ))}
         </div>
-        <div className="motion-source-card">
-          <div className="motion-browser">
-            <i />
-            <i />
-            <i />
-            <strong>source website</strong>
-          </div>
-          <div className="motion-site-preview">
-            <nav>
-              <span>Docs</span>
-              <span>Pricing</span>
-              <span>FAQ</span>
-            </nav>
-            <h3>Business content built for humans.</h3>
-            <p>Pages, docs, prices, support text, schema gaps, and changing site content.</p>
-            <div className="motion-site-grid">
-              <span />
-              <span />
-              <span />
-            </div>
-          </div>
+        <div className="motion-code motion-code-right">
+          {motionIndexLines.map((line, index) => (
+            <span key={`${line}-${index}`} style={{ "--n": index }}>
+              {line}
+            </span>
+          ))}
+        </div>
+        <div className="motion-capture-track" aria-hidden="true">
+          {motionCapturedPages.map((page, index) => (
+            <figure
+              className="motion-source-card"
+              key={page.label}
+              style={{ animationDelay: `${index * -3.8}s` }}
+            >
+              <div className="motion-browser">
+                <i />
+                <i />
+                <i />
+                <strong>glassgate.app/source</strong>
+              </div>
+              <img className="motion-capture-image" src={page.image} alt="" />
+            </figure>
+          ))}
         </div>
         <div className="motion-converter">
           <div className="motion-token">
             <small>Token reduction</small>
-            <strong>72% less</strong>
+            <strong>{reductionPercent}%</strong>
           </div>
           <div className="motion-beam" />
           <div className="motion-particles">
@@ -590,14 +647,13 @@ function AgentMotionGraphic() {
         <div className="motion-output">
           <div className="motion-output-header">
             <LogoMark small />
-            <span>Agent-ready mirror</span>
+            <span>GlassGate</span>
           </div>
-          <strong className="motion-score">92</strong>
-          <small>AI readiness score</small>
+          <small>Agent-ready website</small>
+          <strong className="motion-score">Ready</strong>
           <div className="motion-output-list">
-            {motionOutputRows.map(([Icon, name, status]) => (
+            {motionOutputRows.map(([name, status]) => (
               <div key={name}>
-                <Icon size={17} />
                 <span>{name}</span>
                 <em>{status}</em>
               </div>

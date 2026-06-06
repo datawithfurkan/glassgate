@@ -97,6 +97,9 @@ Current workstreams:
 
 Work log:
 
+- 2026-06-06, frontend/main: Embedded a masked real ecommerce front-page capture in the How it works animation and changed page cards to move right-to-left through the scanner.
+- 2026-06-06, frontend/main: Replaced the animation source card with anonymized realistic ecommerce, travel, and SaaS website previews for MVP review.
+- 2026-06-06, frontend/main: Refined the How it works animation into a full-screen reference-shaped scene and changed the token percentage loop to start at 0%.
 - 2026-06-06, frontend/main: Added a reference-inspired motion graphic for the How it works section that visualizes website content becoming agent-ready files.
 - 2026-06-06, shared docs: Added GitHub sync rules and a project story/work-log section so agents keep up with fast-moving branch changes.
 - 2026-06-06, shared docs: Added `agent.md` and `AGENTS.md` so agents read collaboration rules before work starts.
