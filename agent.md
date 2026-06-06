@@ -15,10 +15,24 @@ Before making any change, the agent must:
 
 1. Read this `agent.md` file.
 2. Run `git status -sb`.
-3. Run `git fetch origin --prune` when the task involves current GitHub state, pushing, pulling, deployment, branches, or collaboration.
+3. Run `git fetch origin --prune`.
 4. Confirm the current branch and upstream with `git branch -vv`.
-5. Inspect relevant recent commits before changing files owned by the other colleague.
-6. Treat all existing local changes as someone else's work unless the agent created them in the current task.
+5. If the local branch is behind its upstream and the worktree is clean, pull the latest changes before editing.
+6. Inspect relevant recent commits before changing files owned by the other colleague.
+7. Treat all existing local changes as someone else's work unless the agent created them in the current task.
+
+## GitHub Sync Rules
+
+This project changes quickly because frontend and backend work happen in parallel. Agents must keep the repository synchronized with GitHub throughout the task.
+
+- Always fetch before starting work.
+- Pull or rebase the current branch before editing when the branch is behind its upstream and the worktree is clean.
+- If the task takes a while, fetch again before committing or pushing.
+- Before every push, run `git status -sb`, review the staged diff, and fetch again to detect remote changes.
+- If the remote moved while the agent was working, integrate the remote changes without overwriting colleague work. Prefer rebasing a small local commit or reapplying a narrow patch on top of the updated branch.
+- Push completed commits promptly when the user asks for changes to be published.
+- Never force-push unless the user explicitly asks for a force-push and the agent has explained what remote commits would be overwritten.
+- After pulling new changes, inspect the recent commit history and the files changed so the agent understands what has moved since the last task.
 
 ## Branch and Ownership Rules
 
@@ -64,6 +78,30 @@ Shared files require extra care. Read the surrounding context and recent commits
 - Prefer additive, narrow changes over broad rewrites.
 - Preserve branch intent: production/frontend behavior on `main`, backend work on the backend branch, unless the user gives a different instruction.
 - Before pushing, run `git status -sb` and review the diff so only intended files are included.
+
+## Project Story and Work Log
+
+Agents must keep enough project context to understand what both colleagues are building.
+
+- Before starting a new task, read this section and inspect recent commits.
+- When making a meaningful change, add a short dated entry to the work log below.
+- Keep entries concise: date, branch or workstream, what changed, and why it matters.
+- Preserve previous entries. Do not delete or rewrite another colleague's work-log notes unless the user explicitly asks.
+- If a change affects both frontend and backend, say that clearly in the entry.
+
+Current workstreams:
+
+- Frontend: React/Vite interface for `glassgate.app`, one-page scrolling landing experience, separate `/audit` dashboard route, Vercel frontend deployment behavior.
+- Backend: Express API for audits, crawling, scoring, generated artifacts, jobs, health, metrics, search, optional API key auth, and rate limiting.
+- Shared: documentation, generated demo fixture, branch discipline, GitHub synchronization, and deployment coordination.
+
+Work log:
+
+- 2026-06-06, shared docs: Added GitHub sync rules and a project story/work-log section so agents keep up with fast-moving branch changes.
+- 2026-06-06, shared docs: Added `agent.md` and `AGENTS.md` so agents read collaboration rules before work starts.
+- 2026-06-06, frontend/main: Converted the landing navigation into smooth scrolling sections while keeping `/audit` as a separate route.
+- 2026-06-06, frontend/deployment: Restored the Vercel SPA fallback so direct client-side routes like `/audit` resolve to `index.html`.
+- 2026-06-06, backend: Hardened the Express API with jobs, health, metrics, search, generated artifacts, optional API key auth, rate limiting, docs, and tests.
 
 ## Deployment Awareness
 
