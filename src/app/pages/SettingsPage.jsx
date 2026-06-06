@@ -30,11 +30,11 @@ export function SettingsPage() {
           </label>
           <label className="app-field">
             <span>Workspace</span>
-            <input defaultValue="glasgate.ai" />
+            <input defaultValue="glassgate.app" />
           </label>
           <label className="app-field">
             <span>Email</span>
-            <input defaultValue="team@glasgate.ai" type="email" />
+            <input defaultValue="team@glassgate.app" type="email" />
           </label>
         </article>
 

@@ -4,13 +4,13 @@ export const demoArtifacts = {
   llmsTxt: "/generated/demo-glasgate/llms.txt",
   llmsFullTxt: "/generated/demo-glasgate/llms-full.txt",
   aiIndex: "/generated/demo-glasgate/ai-index.json",
-  pages: [{ url: "https://glasgate.ai", slug: "home", markdown: "/generated/demo-glasgate/pages/home.md", json: "/generated/demo-glasgate/pages/home.json" }]
+  pages: [{ url: "https://glassgate.app", slug: "home", markdown: "/generated/demo-glasgate/pages/home.md", json: "/generated/demo-glasgate/pages/home.json" }]
 };
 
 export const embeddedDemoIndex = {
   site: {
-    url: "https://glasgate.ai",
-    title: "glasgate.ai",
+    url: "https://glassgate.app",
+    title: "glassgate.app",
     description: "AI-ready data pipelines for the web.",
     language: "en",
     lastIndexedAt: "2026-06-06T12:00:00.000Z"
@@ -32,8 +32,8 @@ export const embeddedDemoIndex = {
   },
   pages: [
     {
-      url: "https://glasgate.ai/",
-      title: "glasgate.ai — AI-ready data pipelines",
+      url: "https://glassgate.app/",
+      title: "glassgate.app — AI-ready data pipelines",
       description: "Turn any website into clean, structured, AI-ready data.",
       language: "en",
       markdownUrl: "inline:home.md",
@@ -52,37 +52,37 @@ export const embeddedDemoIndex = {
     crawlMs: 1240
   },
   issues: [
-    { severity: "warning", message: "No llms.txt found on target site — glasgate.ai will generate one." },
+    { severity: "warning", message: "No llms.txt found on target site — glassgate.app will generate one." },
     { severity: "info", message: "No JSON-LD structured data found." }
   ]
 };
 
 export const embeddedDemoFiles = {
-  "inline:llms.txt": `# glasgate.ai
+  "inline:llms.txt": `# glassgate.app
 
 > AI-ready data pipelines for the web.
 
 ## Important Pages
 
-- [Home](https://glasgate.ai/) - Overview
-- [Platform](https://glasgate.ai/platform) - Pipeline
-- [Docs](https://glasgate.ai/docs) - API reference`,
-  "inline:llms-full.txt": `# glasgate.ai Full Agent Corpus
+- [Home](https://glassgate.app/) - Overview
+- [Platform](https://glassgate.app/platform) - Pipeline
+- [Docs](https://glassgate.app/docs) - API reference`,
+  "inline:llms-full.txt": `# glassgate.app Full Agent Corpus
 
 Turn any website into clean, structured, AI-ready data for agents and automations.`,
   "inline:home.md": `---
-title: glasgate.ai — AI-ready data pipelines
-url: https://glasgate.ai/
-generator: glasgate.ai
+title: glassgate.app — AI-ready data pipelines
+url: https://glassgate.app/
+generator: glassgate.app
 ---
 
-# glasgate.ai
+# glassgate.app
 
 Turn any website into clean, structured, AI-ready data.`,
   "inline:home.json": JSON.stringify({
-    url: "https://glasgate.ai/",
-    title: "glasgate.ai",
-    generator: "glasgate.ai"
+    url: "https://glassgate.app/",
+    title: "glassgate.app",
+    generator: "glassgate.app"
   }, null, 2)
 };
 
@@ -304,7 +304,7 @@ export function getArtifactRows(artifacts, status = "completed") {
 
 export const recommendationActions = {
   structuredData: "Add JSON-LD schema markup for key pages (Product, Organization, FAQPage).",
-  llmsTxtExists: "Publish an llms.txt file or let glasgate.ai generate one automatically.",
+  llmsTxtExists: "Publish an llms.txt file or let glassgate.app generate one automatically.",
   sitemapXml: "Add a sitemap.xml so agents can discover all public pages.",
   robotsTxt: "Publish robots.txt and allow GlassGateBot for reliable crawling.",
   canonicalUrls: "Add canonical URLs to prevent duplicate content in agent indexes.",

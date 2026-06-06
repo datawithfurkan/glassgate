@@ -794,37 +794,6 @@ h1 span,
   margin: 0 auto;
 }
 
-.motion-code {
-  position: absolute;
-  z-index: 1;
-  display: grid;
-  gap: 13px;
-  max-width: 410px;
-  color: #687092;
-  font: 13px/1.35 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  letter-spacing: 0;
-}
-
-.motion-code-left {
-  left: clamp(16px, 4vw, 58px);
-  top: 23%;
-}
-
-.motion-code-right {
-  left: 42%;
-  top: 14%;
-  max-width: 355px;
-  opacity: 0.72;
-}
-
-.motion-code span {
-  display: block;
-  opacity: 0.5;
-  transform: translateX(-14px);
-  animation: codeLineDrift 6.4s ease-in-out infinite;
-  animation-delay: calc(var(--n) * 0.16s);
-}
-
 .motion-capture-track {
   position: absolute;
   inset: 0;
@@ -836,8 +805,8 @@ h1 span,
   position: absolute;
   top: 23%;
   left: 0;
-  width: min(620px, 43vw);
-  height: min(430px, 49vh);
+  width: min(610px, 42vw);
+  height: min(424px, 49vh);
   overflow: hidden;
   margin: 0;
   border: 1px solid rgba(38, 85, 255, 0.12);
@@ -846,7 +815,7 @@ h1 span,
   box-shadow: 0 24px 78px rgba(42, 49, 118, 0.16);
   opacity: 0;
   transform: translateX(112vw);
-  animation: capturedPageTravel 7.6s cubic-bezier(0.45, 0, 0.18, 1) infinite;
+  animation: capturedPageTravel 12s cubic-bezier(0.45, 0, 0.18, 1) infinite;
   will-change: transform, opacity;
 }
 
@@ -879,6 +848,37 @@ h1 span,
   height: calc(100% - 38px);
   object-fit: cover;
   object-position: top center;
+}
+
+.motion-converted-panel {
+  position: absolute;
+  left: 0;
+  top: 38px;
+  width: 0;
+  height: calc(100% - 38px);
+  overflow: hidden;
+  border-right: 1px solid rgba(37, 189, 85, 0.35);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 18px 0 40px rgba(255, 255, 255, 0.82);
+  animation: convertedPanelReveal 12s cubic-bezier(0.45, 0, 0.18, 1) infinite;
+  animation-delay: inherit;
+  will-change: width;
+}
+
+.motion-converted-panel pre {
+  display: grid;
+  gap: 8px;
+  min-width: min(610px, 42vw);
+  margin: 0;
+  padding: 24px 22px;
+  color: #42506d;
+  font: 12px/1.28 "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  letter-spacing: 0;
+}
+
+.motion-converted-panel span:first-child {
+  color: var(--blue);
+  font-weight: 900;
 }
 
 .motion-converter {
@@ -956,72 +956,6 @@ h1 span,
   opacity: var(--o);
   animation: particleStream 3.2s ease-in-out infinite;
   animation-delay: var(--d);
-}
-
-.motion-output {
-  position: absolute;
-  left: 84%;
-  top: 24%;
-  z-index: 4;
-  width: min(350px, 24vw);
-  min-height: 390px;
-  padding: 34px;
-  overflow: hidden;
-  border: 1px solid rgba(38, 85, 255, 0.12);
-  border-radius: 8px;
-  color: #11162e;
-  background:
-    radial-gradient(circle at 20% 16%, rgba(255, 255, 255, 0.9), transparent 7rem),
-    linear-gradient(160deg, rgba(255, 255, 255, 0.96), rgba(213, 224, 255, 0.78) 45%, rgba(37, 189, 85, 0.22));
-  box-shadow: 0 22px 72px rgba(38, 85, 255, 0.14);
-  animation: outputReveal 6.4s ease-in-out infinite;
-}
-
-.motion-output-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 58px;
-  color: #1b2446;
-  font-size: 26px;
-  font-weight: 820;
-}
-
-.motion-score {
-  display: block;
-  margin-top: 8px;
-  color: var(--blue);
-  font-size: clamp(46px, 5vw, 74px);
-  line-height: 0.94;
-}
-
-.motion-output > small {
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.motion-output-list {
-  display: grid;
-  gap: 13px;
-  margin-top: 44px;
-}
-
-.motion-output-list div {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 18px;
-  min-height: 34px;
-  border-bottom: 1px solid rgba(38, 85, 255, 0.11);
-  color: #31395f;
-  font-size: 12px;
-}
-
-.motion-output-list em {
-  color: var(--green);
-  font-size: 10px;
-  font-style: normal;
-  font-weight: 740;
 }
 
 .architecture {
@@ -1593,42 +1527,50 @@ kbd {
   }
 }
 
-@keyframes codeLineDrift {
-  0%,
-  100% {
-    opacity: 0.34;
-    transform: translateX(-18px);
-  }
-  42% {
-    opacity: 0.72;
-    transform: translateX(8px);
-  }
-}
-
 @keyframes capturedPageTravel {
   0% {
     opacity: 0;
-    transform: translateX(108vw) translateY(6px) scale(0.96);
+    transform: translateX(112vw) translateY(6px) scale(0.96);
   }
-  8% {
+  9% {
     opacity: 1;
   }
-  32% {
+  28% {
     opacity: 1;
-    transform: translateX(58vw) translateY(0) scale(1);
+    transform: translateX(50vw) translateY(0) scale(1);
   }
-  56% {
+  50% {
     opacity: 1;
-    transform: translateX(36vw) translateY(0) scale(1);
+    transform: translateX(35vw) translateY(0) scale(1);
   }
-  82% {
+  75% {
     opacity: 1;
-    transform: translateX(5vw) translateY(-2px) scale(0.98);
+    transform: translateX(17vw) translateY(-2px) scale(0.98);
   }
-  96%,
+  93% {
+    opacity: 1;
+    transform: translateX(-24vw) translateY(-4px) scale(0.95);
+  }
   100% {
     opacity: 0;
-    transform: translateX(-54vw) translateY(-4px) scale(0.94);
+    transform: translateX(-55vw) translateY(-4px) scale(0.94);
+  }
+}
+
+@keyframes convertedPanelReveal {
+  0%,
+  28% {
+    width: 0;
+  }
+  50% {
+    width: 34%;
+  }
+  75% {
+    width: 82%;
+  }
+  93%,
+  100% {
+    width: 100%;
   }
 }
 
@@ -1669,18 +1611,6 @@ kbd {
   100% {
     opacity: 0;
     transform: translate(calc(var(--x) + 112px), calc(var(--y) + 18px)) scale(0.45);
-  }
-}
-
-@keyframes outputReveal {
-  0%,
-  100% {
-    opacity: 0.74;
-    transform: translateX(18px);
-  }
-  50% {
-    opacity: 1;
-    transform: translateX(0);
   }
 }
 
@@ -2360,40 +2290,23 @@ kbd {
     display: none;
   }
 
-  .motion-code {
-    gap: 9px;
-    font-size: 10px;
-  }
-
-  .motion-code-left {
-    left: 4%;
-    top: 58%;
-    width: 54%;
-    max-height: 220px;
-    overflow: hidden;
-  }
-
-  .motion-code-right {
-    display: none;
-  }
-
   .motion-source-card {
     top: 21%;
     width: min(520px, 78vw);
     height: 304px;
   }
 
+  .motion-converted-panel pre {
+    min-width: min(520px, 78vw);
+    gap: 6px;
+    padding: 18px;
+    font-size: 10px;
+  }
+
   .motion-converter {
     left: 12%;
     top: 15%;
     height: 72%;
-  }
-
-  .motion-output {
-    left: 72%;
-    top: 23%;
-    width: 62%;
-    min-height: 304px;
   }
 }
 
@@ -2443,8 +2356,10 @@ kbd {
     height: 270px;
   }
 
-  .motion-score {
-    font-size: 42px;
+  .motion-converted-panel pre {
+    min-width: 82vw;
+    padding: 16px;
+    font-size: 9px;
   }
 
   .audit-main {

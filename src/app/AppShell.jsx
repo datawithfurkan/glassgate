@@ -7,7 +7,7 @@ import {
   Settings,
   Sparkles
 } from "lucide-react";
-import { appPages, goToAppPage } from "./navigation.js";
+import { appPages, goHome, goToAppPage } from "./navigation.js";
 
 function LogoMark({ small = false }) {
   return (
@@ -20,9 +20,9 @@ function LogoMark({ small = false }) {
 
 function AppLogo() {
   return (
-    <button className="logo" onClick={() => goToAppPage("audit")}>
+    <button className="logo" onClick={goHome} aria-label="Go to home page">
       <LogoMark />
-      <span>glasgate.ai</span>
+      <span>glassgate.app</span>
     </button>
   );
 }

@@ -27,3 +27,11 @@ export function goToAppPage(pageId) {
 export function goToAudit() {
   goToAppPage("audit");
 }
+
+export function goHome() {
+  if (window.location.pathname !== "/") {
+    window.history.pushState({}, "", "/");
+    window.dispatchEvent(new Event("routechange"));
+  }
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}

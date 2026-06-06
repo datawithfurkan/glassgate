@@ -5,7 +5,7 @@ import { goToAppPage } from "../navigation.js";
 
 const recentAudits = [
   { url: "https://example.com", score: 82, pages: 5, status: "completed" },
-  { url: "https://glasgate.ai", score: 82, pages: 2, status: "completed" },
+  { url: "https://glassgate.app", score: 82, pages: 2, status: "completed" },
   { url: "https://hamburg.de", score: 55, pages: 1, status: "completed" }
 ];
 

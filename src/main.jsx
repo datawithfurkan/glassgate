@@ -38,6 +38,7 @@ import {
   Zap
 } from "lucide-react";
 import ecommerceMaskedFront from "./assets/ecommerce-masked-front.png";
+import groceryMaskedFront from "./assets/grocery-masked-front.png";
 import "./styles.css";
 
 const navItems = [
@@ -106,38 +107,52 @@ const plans = [
   ["Enterprise", "Custom", "Unlimited", "Custom connectors", "SLA and compliance"]
 ];
 
-const motionCodeLines = [
-  "<!-- original website content -->",
-  "<header><nav>Products Docs Pricing</nav></header>",
-  "<h1>Business content built for humans</h1>",
-  "<p>Pages, docs, support copy, pricing, FAQs.</p>",
-  "<section data-crawl='true'>",
-  "  <article>Product details and updates</article>",
-  "  <aside>Navigation, chrome, tracking</aside>",
-  "</section>",
-  "<footer>Legal, social, duplicated links</footer>"
-];
-
-const motionIndexLines = [
-  "<!-- GlassGate agent mirror -->",
-  "title: Business content built for humans",
-  "canonical: https://example.com/",
-  "format: markdown + json",
-  "llms.txt: generated",
-  "ai-index.json: searchable",
-  "tokens: original -> compressed",
-  "status: agent readable"
-];
-
-const motionOutputRows = [
-  ["llms.txt", "Markdown mirror"],
-  ["ai-index.json", "Search map"],
-  ["pages.json", "Structured pages"],
-  ["Agent API", "Ready"]
-];
-
 const motionCapturedPages = [
-  { image: ecommerceMaskedFront, label: "Masked ecommerce front page capture" }
+  {
+    image: ecommerceMaskedFront,
+    label: "Masked ecommerce front page capture",
+    sourceLabel: "source website",
+    mirrorLines: [
+      "llms.txt",
+      "---",
+      "title: Agent-ready storefront",
+      "canonical: https://example.com/",
+      "type: ecommerce_homepage",
+      "markdown:",
+      "  # Fresh arrivals",
+      "  - Hero offer extracted",
+      "  - Navigation normalized",
+      "  - Product categories indexed",
+      "json:",
+      "  {",
+      "    \"pageType\": \"storefront\",",
+      "    \"sections\": [\"hero\", \"nav\", \"cards\"],",
+      "    \"agentReady\": true",
+      "  }"
+    ]
+  },
+  {
+    image: groceryMaskedFront,
+    label: "Masked grocery storefront capture",
+    sourceLabel: "next source",
+    mirrorLines: [
+      "page.json",
+      "{",
+      "  \"siteType\": \"grocery_storefront\",",
+      "  \"primaryOffer\": \"Summer grilling\",",
+      "  \"categories\": [",
+      "    \"produce\", \"meat\", \"snacks\",",
+      "    \"pantry\", \"weekly specials\"",
+      "  ],",
+      "  \"structuredFor\": \"agents\",",
+      "  \"llmsTxt\": \"/llms.txt\",",
+      "  \"tokens\": {",
+      "    \"source\": 18420,",
+      "    \"mirror\": 4620",
+      "  }",
+      "}"
+    ]
+  }
 ];
 
 const motionParticles = Array.from({ length: 170 }, (_, index) => ({
@@ -152,7 +167,7 @@ function Logo() {
   return (
     <button className="logo" onClick={() => goToSection("platform")}>
       <LogoMark />
-      <span>glasgate.ai</span>
+      <span>glassgate.app</span>
     </button>
   );
 }
@@ -243,7 +258,7 @@ function Processor() {
     <div className="processor float-b">
       <div className="dot-field" />
       <LogoMark />
-      <strong>glasgate.ai</strong>
+      <strong>glassgate.app</strong>
       <span>
         <i /> Processing
       </span>
@@ -366,7 +381,7 @@ function DemoBand({ compact = false }) {
   return (
     <section className={`demo-band page-shell ${compact ? "compact" : ""}`}>
       <div>
-        <h2>{compact ? "Ready to build AI-ready pipelines?" : "See glasgate.ai in action."}</h2>
+        <h2>{compact ? "Ready to build AI-ready pipelines?" : "See glassgate.app in action."}</h2>
         <p>{compact ? "Simple setup. Structured output. Enterprise control." : "Book a personalized demo with our team."}</p>
       </div>
       <button className="primary-button" onClick={goToAudit}>Book a demo <ArrowRight size={18} /></button>
@@ -409,8 +424,8 @@ function AgentMotionGraphic() {
   useEffect(() => {
     let frameId;
     let isVisible = false;
-    const duration = 7600;
-    const holdMs = 700;
+    const duration = 12000;
+    const holdMs = 900;
 
     animationStartRef.current = performance.now();
 
@@ -456,34 +471,27 @@ function AgentMotionGraphic() {
         <strong>4,620 tokens</strong>
       </div>
       <div className="motion-stage">
-        <div className="motion-code motion-code-left">
-          {motionCodeLines.map((line, index) => (
-            <span key={`${line}-${index}`} style={{ "--n": index }}>
-              {line}
-            </span>
-          ))}
-        </div>
-        <div className="motion-code motion-code-right">
-          {motionIndexLines.map((line, index) => (
-            <span key={`${line}-${index}`} style={{ "--n": index }}>
-              {line}
-            </span>
-          ))}
-        </div>
         <div className="motion-capture-track" aria-hidden="true">
           {motionCapturedPages.map((page, index) => (
             <figure
               className="motion-source-card"
               key={page.label}
-              style={{ animationDelay: `${index * -3.8}s` }}
+              style={{ animationDelay: `${index * -6}s` }}
             >
               <div className="motion-browser">
                 <i />
                 <i />
                 <i />
-                <strong>glassgate.app/source</strong>
+                <strong>{page.sourceLabel}</strong>
               </div>
               <img className="motion-capture-image" src={page.image} alt="" />
+              <div className="motion-converted-panel">
+                <pre>
+                  {page.mirrorLines.map((line, lineIndex) => (
+                    <span key={`${page.label}-${lineIndex}`}>{line}</span>
+                  ))}
+                </pre>
+              </div>
             </figure>
           ))}
         </div>
@@ -496,22 +504,6 @@ function AgentMotionGraphic() {
           <div className="motion-particles">
             {motionParticles.map((style, index) => (
               <i key={index} style={style} />
-            ))}
-          </div>
-        </div>
-        <div className="motion-output">
-          <div className="motion-output-header">
-            <LogoMark small />
-            <span>GlassGate</span>
-          </div>
-          <small>Agent-ready website</small>
-          <strong className="motion-score">Ready</strong>
-          <div className="motion-output-list">
-            {motionOutputRows.map(([name, status]) => (
-              <div key={name}>
-                <span>{name}</span>
-                <em>{status}</em>
-              </div>
             ))}
           </div>
         </div>
@@ -606,7 +598,7 @@ function Docs() {
         <div className="docs-copy">
           <div className="pill"><Sparkles size={15} /> Docs</div>
           <h1>Docs</h1>
-          <p>Build, integrate, and scale with glasgate.ai.</p>
+          <p>Build, integrate, and scale with glassgate.app.</p>
           <label className="search-box">
             <Search size={25} />
             <input placeholder="Search the documentation..." />

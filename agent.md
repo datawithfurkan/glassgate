@@ -97,6 +97,8 @@ Current workstreams:
 
 Work log:
 
+- 2026-06-06, frontend/main: Corrected frontend brand text to glassgate.app and made the audit sidebar logo navigate back to the landing page.
+- 2026-06-06, frontend/main: Updated the How it works animation to show two masked storefront captures converting into clipped llms.txt/page.json content inside each moving card.
 - 2026-06-06, frontend/main: Embedded a masked real ecommerce front-page capture in the How it works animation and changed page cards to move right-to-left through the scanner.
 - 2026-06-06, frontend/main: Replaced the animation source card with anonymized realistic ecommerce, travel, and SaaS website previews for MVP review.
 - 2026-06-06, frontend/main: Refined the How it works animation into a full-screen reference-shaped scene and changed the token percentage loop to start at 0%.
