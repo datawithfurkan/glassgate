@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   ArrowRight,
@@ -37,7 +37,41 @@ import {
 } from "lucide-react";
 import "./styles.css";
 
-const pages = ["Platform", "How it works", "Solutions", "Pricing", "Docs", "Company"];
+const navItems = [
+  { label: "Platform", id: "platform" },
+  { label: "How it works", id: "how-it-works" },
+  { label: "Solutions", id: "solutions" },
+  { label: "Pricing", id: "pricing" },
+  { label: "Docs", id: "docs" },
+  { label: "Company", id: "company" }
+];
+
+const sectionAliases = Object.fromEntries(navItems.map(({ label, id }) => [label, id]));
+sectionAliases.Audit = "audit";
+
+function scrollToSection(id) {
+  const section = document.getElementById(sectionAliases[id] ?? id);
+  section?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function goToSection(id) {
+  const targetId = sectionAliases[id] ?? id;
+  if (window.location.pathname === "/audit") {
+    window.history.pushState({}, "", "/");
+    window.dispatchEvent(new Event("routechange"));
+    window.setTimeout(() => scrollToSection(targetId), 0);
+    return;
+  }
+  window.dispatchEvent(new CustomEvent("goto", { detail: targetId }));
+}
+
+function goToAudit() {
+  if (window.location.pathname !== "/audit") {
+    window.history.pushState({}, "", "/audit");
+    window.dispatchEvent(new Event("routechange"));
+  }
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 
 const pipeline = [
   { icon: Bot, title: "Crawl", text: "Discover pages" },
@@ -218,7 +252,7 @@ function firstMarkdownSource(artifacts) {
 
 function Logo() {
   return (
-    <button className="logo" onClick={() => window.dispatchEvent(new CustomEvent("goto", { detail: "Platform" }))}>
+    <button className="logo" onClick={() => goToSection("platform")}>
       <LogoMark />
       <span>glassgate.app</span>
     </button>
@@ -234,24 +268,41 @@ function LogoMark({ small = false }) {
   );
 }
 
-function Header({ page, setPage }) {
+function Header({ activeSection, onNavigate, onAudit }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const handleNavigate = (id) => {
+    onNavigate(id);
+    setMenuOpen(false);
+  };
+
   return (
     <header className="header">
       <Logo />
-      <nav>
-        {pages.map((item) => (
-          <button className={page === item ? "active" : ""} key={item} onClick={() => setPage(item)}>
-            {item}
-            {(item === "Solutions" || item === "Company") && <ChevronDown size={14} />}
+      <nav className={menuOpen ? "open" : ""}>
+        {navItems.map(({ label, id }) => (
+          <button
+            className={activeSection === id ? "active" : ""}
+            key={id}
+            onClick={() => handleNavigate(id)}
+            aria-current={activeSection === id ? "true" : undefined}
+          >
+            {label}
+            {(label === "Solutions" || label === "Company") && <ChevronDown size={14} />}
           </button>
         ))}
       </nav>
       <div className="header-actions">
         <button className="signin">Sign in</button>
-        <button className="primary-button" onClick={() => setPage("Audit")}>
+        <button className="primary-button" onClick={onAudit}>
           Book a demo <ArrowRight size={17} />
         </button>
-        <button className="mobile-menu" aria-label="Open menu">
+        <button
+          className="mobile-menu"
+          aria-label="Open menu"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((open) => !open)}
+        >
           <Menu size={22} />
         </button>
       </div>
@@ -349,7 +400,7 @@ function Connector({ side }) {
 function Platform() {
   return (
     <>
-      <section className="hero page-shell">
+      <section className="hero page-shell" id="platform">
         <div className="hero-copy">
           <div className="pill">
             <Sparkles size={15} /> AI-ready data pipeline
@@ -359,8 +410,8 @@ function Platform() {
           </h1>
           <p>We crawl, clean, and structure web content for agents and automations.</p>
           <div className="hero-actions">
-            <button className="primary-button">Book a demo <ArrowRight size={18} /></button>
-            <button className="secondary-button"><Play size={18} /> See how it works</button>
+            <button className="primary-button" onClick={goToAudit}>Book a demo <ArrowRight size={18} /></button>
+            <button className="secondary-button" onClick={() => goToSection("how-it-works")}><Play size={18} /> See how it works</button>
           </div>
           <div className="trust-row">
             <span><Check size={15} /> No credit card</span>
@@ -420,7 +471,7 @@ function DemoBand({ compact = false }) {
         <h2>{compact ? "Ready to build AI-ready pipelines?" : "See GlassGate in action."}</h2>
         <p>{compact ? "Simple setup. Structured output. Enterprise control." : "Book a personalized demo with our team."}</p>
       </div>
-      <button className="primary-button">Book a demo <ArrowRight size={18} /></button>
+      <button className="primary-button" onClick={goToAudit}>Book a demo <ArrowRight size={18} /></button>
       <MiniDashboard />
     </section>
   );
@@ -444,7 +495,7 @@ function MiniDashboard() {
 function HowItWorks() {
   return (
     <>
-      <section className="simple-hero page-shell">
+      <section className="simple-hero page-shell" id="how-it-works">
         <div>
           <div className="pill"><Sparkles size={15} /> How it works</div>
           <h1>From website to structured agent data.</h1>
@@ -452,9 +503,7 @@ function HowItWorks() {
         </div>
         <FlowBoard />
       </section>
-      <PipelineRail />
       <ArchitectureStrip />
-      <DemoBand compact />
     </>
   );
 }
@@ -497,12 +546,12 @@ function ArchitectureStrip() {
 function Solutions() {
   return (
     <>
-      <section className="solutions-hero page-shell">
+      <section className="solutions-hero page-shell" id="solutions">
         <div>
           <div className="pill"><Sparkles size={15} /> AI-ready solutions</div>
           <h1>Solutions built for <span>every team.</span></h1>
           <p>Clean, structured data for real workflows.</p>
-          <button className="primary-button">Book a demo <ArrowRight size={18} /></button>
+          <button className="primary-button" onClick={goToAudit}>Book a demo <ArrowRight size={18} /></button>
         </div>
         <div className="solution-orbit">
           <Processor />
@@ -516,8 +565,6 @@ function Solutions() {
           ))}
         </div>
       </section>
-      <FeatureCards />
-      <DemoBand compact />
     </>
   );
 }
@@ -525,7 +572,7 @@ function Solutions() {
 function Pricing() {
   return (
     <>
-      <section className="pricing page-shell">
+      <section className="pricing page-shell" id="pricing">
         <div className="center-heading">
           <div className="pill"><Sparkles size={15} /> Pricing</div>
           <h1>Plans that <span>scale</span> with you.</h1>
@@ -540,7 +587,7 @@ function Pricing() {
               </span>
               <h3>{plan[0]}</h3>
               <div className="price">{plan[1]}{plan[1].startsWith("$") && <small>/month</small>}</div>
-              <button className={index === 1 ? "primary-button" : "outline-button"}>
+              <button className={index === 1 ? "primary-button" : "outline-button"} onClick={goToAudit}>
                 {index === 3 ? "Contact sales" : "Start free trial"}
               </button>
               {plan.slice(2).map((item) => (
@@ -550,7 +597,6 @@ function Pricing() {
           ))}
         </div>
       </section>
-      <DemoBand compact />
     </>
   );
 }
@@ -558,7 +604,7 @@ function Pricing() {
 function Docs() {
   return (
     <>
-      <section className="docs page-shell">
+      <section className="docs page-shell" id="docs">
         <div className="docs-copy">
           <div className="pill"><Sparkles size={15} /> Docs</div>
           <h1>Docs</h1>
@@ -589,7 +635,6 @@ function Docs() {
           </article>
         ))}
       </section>
-      <DemoBand compact />
     </>
   );
 }
@@ -611,7 +656,7 @@ function DocsVisual() {
 function Company() {
   return (
     <>
-      <section className="simple-hero page-shell">
+      <section className="simple-hero page-shell" id="company">
         <div>
           <div className="pill"><Sparkles size={15} /> Company</div>
           <h1>The agentic web needs a delivery layer.</h1>
@@ -619,7 +664,6 @@ function Company() {
         </div>
         <HeroVisual />
       </section>
-      <FeatureCards />
       <DemoBand compact />
     </>
   );
@@ -709,7 +753,7 @@ function AuditDashboard() {
   const issues = Array.isArray(audit.issues) ? audit.issues : [];
 
   return (
-    <section className="audit-shell">
+    <section className="audit-shell" id="audit">
       <aside className="audit-sidebar">
         <Logo />
         {[
@@ -827,33 +871,61 @@ function AuditDashboard() {
 }
 
 function App() {
-  const [page, setPage] = useState("Platform");
+  const [activeSection, setActiveSection] = useState("platform");
+  const [route, setRoute] = useState(() => (window.location.pathname === "/audit" ? "audit" : "home"));
 
-  React.useEffect(() => {
-    const handler = (event) => setPage(event.detail);
+  useEffect(() => {
+    const updateRoute = () => {
+      setRoute(window.location.pathname === "/audit" ? "audit" : "home");
+    };
+
+    window.addEventListener("popstate", updateRoute);
+    window.addEventListener("routechange", updateRoute);
+    return () => {
+      window.removeEventListener("popstate", updateRoute);
+      window.removeEventListener("routechange", updateRoute);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handler = (event) => {
+      const targetId = sectionAliases[event.detail] ?? event.detail;
+      setActiveSection(targetId);
+      scrollToSection(targetId);
+    };
     window.addEventListener("goto", handler);
     return () => window.removeEventListener("goto", handler);
   }, []);
 
-  const Page = useMemo(() => ({
-    Platform,
-    "How it works": HowItWorks,
-    Solutions,
-    Pricing,
-    Docs,
-    Company,
-    Audit: AuditDashboard
-  })[page], [page]);
+  useEffect(() => {
+    const updateActiveSection = () => {
+      const current = navItems.reduce((active, { id }) => {
+        const section = document.getElementById(id);
+        if (!section) return active;
+        return section.getBoundingClientRect().top <= 120 ? id : active;
+      }, "platform");
+      setActiveSection(current);
+    };
 
-  if (page === "Audit") {
+    updateActiveSection();
+    window.addEventListener("scroll", updateActiveSection, { passive: true });
+    return () => window.removeEventListener("scroll", updateActiveSection);
+  }, []);
+
+  if (route === "audit") {
     return <AuditDashboard />;
   }
 
   return (
     <>
-      <Header page={page} setPage={setPage} />
-      <main>
-        <Page />
+      <Header activeSection={activeSection} onNavigate={goToSection} onAudit={goToAudit} />
+      <main className="landing-page">
+        <Platform />
+        <HowItWorks />
+        <Solutions />
+        <Pricing />
+        <Docs />
+        <Company />
       </main>
     </>
   );
