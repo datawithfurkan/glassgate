@@ -97,6 +97,7 @@ Current workstreams:
 
 Work log:
 
+- 2026-06-06, frontend/main: Added a reference-inspired motion graphic for the How it works section that visualizes website content becoming agent-ready files.
 - 2026-06-06, shared docs: Added GitHub sync rules and a project story/work-log section so agents keep up with fast-moving branch changes.
 - 2026-06-06, shared docs: Added `agent.md` and `AGENTS.md` so agents read collaboration rules before work starts.
 - 2026-06-06, frontend/main: Converted the landing navigation into smooth scrolling sections while keeping `/audit` as a separate route.
