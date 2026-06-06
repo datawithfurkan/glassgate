@@ -102,9 +102,10 @@ curl -X POST http://localhost:3001/api/audit/sync \
 ```
 → Fetch robots.txt          check crawl permissions (403 if blocked)
 → Fetch /llms.txt           check if site is already agent-ready
-→ Fetch sitemap.xml         discover pages
-→ Build crawl queue         up to 5 pages
-→ Fetch each page           8s timeout, with GlassGateBot UA
+→ Fetch sitemap.xml         discover page candidates
+→ Filter + rank URLs      exclude login/cart/filter/search/tracking
+→ Build crawl queue       up to 10 canonical pages (value-based)
+→ Fetch each page         8s timeout, per-URL robots check
 → Extract content           title, description, H1–H6, body text,
                             internal links, JSON-LD, Open Graph
 → Normalize                 remove boilerplate, collapse whitespace
@@ -136,7 +137,7 @@ For a site at `example.com`, glasgate.ai writes to `/generated/example-com/`:
 |---|---|---|
 | `llms.txt` | Markdown | Curated site index (llmstxt.org spec) |
 | `llms-full.txt` | Markdown | Full content corpus, all pages concatenated |
-| `ai-index.json` | JSON | Score, checks, metrics, page list |
+| `ai-index.json` | JSON | v1.0 content graph: crawl stats, page types, hashes |
 | `pages/home.md` | Markdown | Single page mirror with YAML frontmatter |
 | `pages/home.json` | JSON | Structured page: headings, links, facts, hash |
 
@@ -222,7 +223,9 @@ See [`.env.example`](.env.example) for all variables.
 | `NODE_ENV` | `development` | `production` → JSON logs, sanitized errors |
 | `GLASGATE_API_KEY` | — | Enable API key auth |
 | `CRAWL_TIMEOUT` | `8000` | Per-page timeout (ms) |
-| `MAX_PAGES` | `5` | Max pages per audit |
+| `MAX_PAGES` | `10` | Max canonical pages per audit (value-ranked) |
+| `MAX_SITEMAP_URLS` | `100` | Max URLs read from sitemap for discovery |
+| `MAX_LLMS_TXT_PAGES` | `8` | Max pages listed in curated llms.txt |
 | `CACHE_TTL_MS` | `600000` | Cache TTL (10 min) |
 | `GENERATED_DIR` | `./generated` | Artifact output directory |
 | `BOT_USER_AGENT` | `GlassGateBot/0.1 (+https://glasgate.ai/bot)` | Crawler UA |
@@ -244,6 +247,7 @@ We do not promise guaranteed AI ranking improvements, hidden bot-only pages, or 
 - [API Reference](docs/API.md) — all endpoints, schemas, error codes
 - [Setup Guide](docs/SETUP.md) — install, run, deploy
 - [Architecture](docs/BACKEND_ARCHITECTURE.md) — system design, data flow, upgrade path
+- [Agent Rules](AGENTS.md) — crawl policy, artifact formats, dev conventions
 
 ---
 

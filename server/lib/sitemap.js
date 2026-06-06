@@ -1,5 +1,7 @@
 import { fetchText } from "./fetcher.js";
 import { extractSitemapFromRobots } from "./robots.js";
+import { filterDiscoveredUrls } from "./urlFilter.js";
+import { selectCrawlQueue } from "./urlRanker.js";
 import config from "../config.js";
 
 /**
@@ -65,11 +67,16 @@ function parseSitemapXml(xml, baseUrl) {
 }
 
 /**
- * Build the crawl queue from sitemap + homepage.
- * Always includes homepage. Picks up to maxPages total.
+ * Build a value-ranked crawl queue from sitemap + navigation link candidates.
  */
-export function buildCrawlQueue(baseUrl, sitemapUrls, maxPages = config.maxPages) {
+export function buildCrawlQueue(baseUrl, sitemapUrls = [], navLinks = [], maxPages = config.maxPages) {
   const homepage = baseUrl.replace(/\/$/, "");
-  const all = [homepage, ...sitemapUrls.filter((u) => u.replace(/\/$/, "") !== homepage)];
-  return [...new Set(all)].slice(0, maxPages);
+  const rawCandidates = [
+    homepage,
+    ...sitemapUrls.filter((u) => u.replace(/\/$/, "") !== homepage),
+    ...navLinks,
+  ];
+
+  const filtered = filterDiscoveredUrls(rawCandidates, baseUrl);
+  return selectCrawlQueue(filtered, baseUrl, maxPages);
 }
