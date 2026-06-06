@@ -1,90 +1,94 @@
-import { Braces, ClipboardList, Download, FileJson, FileText } from "lucide-react";
+import { useState } from "react";
+import { Copy, Download, FileJson, FileText, Plus, RefreshCw, Search } from "lucide-react";
 import { AppShell } from "../AppShell.jsx";
-import { artifactHref, getArtifactRows } from "../auditUtils.js";
+import { artifactLibrary, llmsPreview } from "../demoData.js";
+import { FadeIn, PremiumPanel, StatusDot } from "../components/Visuals.jsx";
 
-const typeIcons = {
-  "llms.txt": FileText,
-  "llms-full.txt": ClipboardList,
-  "ai-index.json": FileJson
-};
+const quickTabs = ["llms.txt", "llms-full.txt", "ai-index.json", "pages.md", "pages.json"];
 
-function iconForName(name) {
-  if (name.endsWith(".json")) return Braces;
-  if (name.endsWith(".md")) return FileText;
-  return typeIcons[name] || FileText;
-}
-
-export function ArtifactsPage({ auditState }) {
-  const { audit, artifacts } = auditState;
-  const rows = getArtifactRows(artifacts, audit.status || "completed");
+export function ArtifactsPage() {
+  const [activeTab, setActiveTab] = useState("llms.txt");
+  const [preview] = useState(llmsPreview);
 
   return (
-    <AppShell activePage="artifacts" title="Artifacts" subtitle="All generated files for the current site audit.">
-      <div className="app-toolbar">
-        <div className="app-chip">Site: {audit.siteId || "demo-glasgate"}</div>
-        <div className="app-chip">{rows.length} files</div>
-      </div>
-
-      <article className="audit-panel table-panel app-wide-panel">
-        <div className="app-panel-head">
-          <h2>Generated Artifacts</h2>
-          <span className="app-muted">Download or open in a new tab</span>
+    <AppShell
+      activePage="artifacts"
+      title="Generated Artifacts Library"
+      subtitle="Browse and manage all AI-generated artifacts for your website."
+      actions={
+        <>
+          <button type="button" className="icon-btn" aria-label="Refresh"><RefreshCw size={18} /></button>
+          <button type="button" className="outline-button">Regenerate All</button>
+          <button type="button" className="primary-button shimmer-btn"><Plus size={16} /> Generate Artifacts</button>
+        </>
+      }
+    >
+      <FadeIn delay={0}>
+        <div className="artifact-quick-tabs premium-tabs">
+          {quickTabs.map((tab) => (
+            <button
+              type="button"
+              key={tab}
+              className={activeTab === tab ? "active" : ""}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tab}
+            </button>
+          ))}
         </div>
-        <div className="app-table app-table-artifacts">
-          <div className="app-table-head">
-            <span>File</span>
-            <span>Description</span>
-            <span>Status</span>
-            <span>Action</span>
+
+        <div className="dash-toolbar">
+          <label className="search-box dash-search">
+            <Search size={18} />
+            <input placeholder="Search artifacts..." />
+          </label>
+          <div className="dash-filters">
+            <button type="button" className="outline-button premium-outline">All Status</button>
+            <button type="button" className="outline-button premium-outline">All Freshness</button>
           </div>
-          {rows.map(({ name, href, detail, status }) => {
-            const Icon = iconForName(name);
-            return (
-              <div className="app-table-row" key={name}>
-                <span className="app-file-cell">
-                  <span className="icon-tile"><Icon size={18} /></span>
-                  <strong>{name}</strong>
-                </span>
-                <span className="app-muted">{detail}</span>
-                <em>{status}</em>
-                <a className="app-download" href={artifactHref(href)} target="_blank" rel="noreferrer">
-                  <Download size={16} /> Open
-                </a>
-              </div>
-            );
-          })}
         </div>
-      </article>
+      </FadeIn>
 
-      <div className="audit-panels">
-        <article className="audit-panel">
-          <h2>Output Types</h2>
-          {[
-            ["llms.txt", "Curated AI site index"],
-            ["llms-full.txt", "Full Markdown corpus"],
-            ["ai-index.json", "Machine-readable site index"],
-            ["page.md / page.json", "Per-page mirrors"]
-          ].map(([title, text]) => (
-            <div className="activity-row" key={title}>
-              <i />
-                <span><strong>{title}</strong> — {text}</span>
+      <PremiumPanel className="app-wide-panel table-panel" delay={80}>
+        <div className="app-table app-table-artifacts dash-artifacts-table">
+          <div className="app-table-head">
+            <span>Artifact</span>
+            <span>Status</span>
+            <span>Freshness</span>
+            <span>Size</span>
+            <span>Last Generated</span>
+            <span />
+          </div>
+          {artifactLibrary.map((row) => (
+            <div className="app-table-row" key={row.name}>
+              <span className="app-file-cell">
+                <span className="icon-tile">{row.name.endsWith(".json") ? <FileJson size={18} /> : <FileText size={18} />}</span>
+                <span><strong>{row.name}</strong><small>{row.desc}</small></span>
+              </span>
+              <span className="status-pill success"><StatusDot /> {row.status}</span>
+              <span>{row.freshness}</span>
+              <span>{row.size}</span>
+              <span>{row.generated}</span>
+              <span>⋯</span>
             </div>
           ))}
-        </article>
-        <article className="audit-panel">
-          <h2>Delivery Paths</h2>
-          {[
-            `/generated/${audit.siteId || "demo-glasgate"}/llms.txt`,
-            `/generated/${audit.siteId || "demo-glasgate"}/ai-index.json`,
-            `/generated/${audit.siteId || "demo-glasgate"}/pages/home.md`
-          ].map((path) => (
-            <div className="activity-row" key={path}>
-              <i />
-                <span>{path}</span>
-            </div>
-          ))}
-        </article>
-      </div>
+        </div>
+      </PremiumPanel>
+
+      <PremiumPanel className="preview-panel artifact-preview-panel" delay={160}>
+        <div className="app-panel-head">
+          <div>
+            <h2>{activeTab}</h2>
+            <p className="app-muted">Success · May 19, 2026 · 12.4 KB</p>
+          </div>
+          <div className="dash-filters">
+            <button type="button" className="outline-button"><Download size={16} /> Download</button>
+            <button type="button" className="outline-button"><Copy size={16} /> Copy</button>
+            <button type="button" className="outline-button">Regenerate</button>
+          </div>
+        </div>
+        <pre className="code-preview">{preview}</pre>
+      </PremiumPanel>
     </AppShell>
   );
 }

@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, createElement } from "react";
+import { isAuthenticated } from "../auth/auth.js";
+import { goToLogin, parseAppRoute } from "./navigation.js";
 import { useAudit } from "./useAudit.js";
-import { parseAppRoute } from "./navigation.js";
 import { AuditPage } from "./pages/AuditPage.jsx";
 import { OverviewPage } from "./pages/OverviewPage.jsx";
 import { ArtifactsPage } from "./pages/ArtifactsPage.jsx";
 import { LogsPage } from "./pages/LogsPage.jsx";
 import { RecommendationsPage } from "./pages/RecommendationsPage.jsx";
 import { SettingsPage } from "./pages/SettingsPage.jsx";
+import { TeamPage } from "./pages/TeamPage.jsx";
 
 const pageComponents = {
   audit: AuditPage,
@@ -14,15 +16,20 @@ const pageComponents = {
   artifacts: ArtifactsPage,
   logs: LogsPage,
   recommendations: RecommendationsPage,
-  settings: SettingsPage
+  settings: SettingsPage,
+  team: TeamPage,
 };
 
 export function AppRouter() {
   const [activePage, setActivePage] = useState(() => parseAppRoute());
+  const [authed, setAuthed] = useState(() => isAuthenticated());
   const auditState = useAudit();
 
   useEffect(() => {
-    const updateRoute = () => setActivePage(parseAppRoute());
+    const updateRoute = () => {
+      setActivePage(parseAppRoute());
+      setAuthed(isAuthenticated());
+    };
     window.addEventListener("popstate", updateRoute);
     window.addEventListener("routechange", updateRoute);
     return () => {
@@ -31,8 +38,14 @@ export function AppRouter() {
     };
   }, []);
 
-  const Page = pageComponents[activePage] || AuditPage;
-  return <Page auditState={auditState} />;
+  useEffect(() => {
+    if (!isAuthenticated()) goToLogin();
+  }, [authed]);
+
+  if (!authed) return null;
+
+  const Page = pageComponents[activePage] || OverviewPage;
+  return createElement(Page, { auditState });
 }
 
 export function isAppRoute(pathname = window.location.pathname) {
