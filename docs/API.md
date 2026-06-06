@@ -1,38 +1,49 @@
-# GlassGate API Reference
+# glasgate.ai API Reference
 
 **Base URL:** `http://localhost:3001`  
 **Version:** `0.1.0`  
+**Updated:** 2026-06-06  
 **Content-Type:** `application/json`
 
 ---
 
 ## Authentication
 
-Authentication is optional in development. Set `GLASGATE_API_KEY` environment variable to enable.
+Disabled by default. Enable by setting `GLASGATE_API_KEY` environment variable.
 
-```
+```http
 Authorization: Bearer <api-key>
-# or
+```
+or
+```http
 X-API-Key: <api-key>
+```
+
+**Response when missing / invalid (401):**
+```json
+{
+  "error":   "Unauthorized",
+  "message": "Valid API key required. Send: Authorization: Bearer <key>"
+}
 ```
 
 ---
 
 ## Rate Limits
 
-| Endpoint group | Limit |
+| Route group | Limit |
 |---|---|
-| `/api/audit*` | 10 requests / minute per IP |
-| All other `/api/*` | 60 requests / minute per IP |
+| `POST /api/audit*` | 10 requests / minute / IP |
+| All other `/api/*` | 60 requests / minute / IP |
 
-Rate limit headers returned on every response:
+**Response headers on rate-limited routes** (`/api/*` except `/api/health*`):
 ```
 X-RateLimit-Limit: 60
-X-RateLimit-Remaining: 58
-X-RateLimit-Reset: 1717675200
+X-RateLimit-Remaining: 57
+X-RateLimit-Reset: 1717675260
 ```
 
-On limit exceeded:
+**Response on limit exceeded (429):**
 ```json
 { "error": "Rate limit exceeded", "retryAfter": 42 }
 ```
@@ -41,50 +52,67 @@ On limit exceeded:
 
 ## Request Tracing
 
-Every response includes:
+Every response carries:
 ```
 X-Request-ID: 550e8400-e29b-41d4-a716-446655440000
 ```
 
-You can supply your own ID:
+Supply your own ID for distributed tracing:
 ```
 X-Request-ID: my-trace-id-123
 ```
 
 ---
 
-## Endpoints
+## Endpoint Overview
 
-### Health
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/health` | ❌ | Liveness check |
+| GET | `/api/health/detailed` | ❌ | Subsystem status |
+| GET | `/api/metrics` | ✅ | Operational metrics |
+| POST | `/api/audit` | ✅ | Start async audit job |
+| POST | `/api/audit/sync` | ✅ | Synchronous audit (wait for result) |
+| GET | `/api/jobs` | ✅ | List all jobs |
+| GET | `/api/jobs/:jobId` | ✅ | Get job status + result + logs |
+| GET | `/api/sites` | ✅ | List all indexed sites |
+| GET | `/api/sites/:siteId` | ✅ | Full audit result for a site |
+| GET | `/api/sites/:siteId/score` | ✅ | Score + checks only |
+| GET | `/api/sites/:siteId/metrics` | ✅ | Token savings + perf metrics |
+| GET | `/api/sites/:siteId/artifacts` | ✅ | Artifact paths only |
+| GET | `/api/search?q=` | ✅ | Full-text search across sites |
+| GET | `/generated/:siteId/*` | ❌ | Static artifact files |
 
 ---
 
-#### `GET /api/health`
+## Health
 
-Basic liveness check.
+### `GET /api/health`
+
+Liveness check. No auth required.
 
 **Response 200:**
 ```json
 {
-  "status": "ok",
-  "version": "0.1.0",
-  "uptime": 3600,
+  "status":    "ok",
+  "version":   "0.1.0",
+  "uptime":    3600,
   "timestamp": "2026-06-06T12:00:00.000Z"
 }
 ```
 
 ---
 
-#### `GET /api/health/detailed`
+### `GET /api/health/detailed`
 
-Detailed health check including subsystem status.
+Subsystem status including job store and cache.
 
 **Response 200:**
 ```json
 {
-  "status": "ok",
-  "version": "0.1.0",
-  "uptime": 3600,
+  "status":    "ok",
+  "version":   "0.1.0",
+  "uptime":    3600,
   "timestamp": "2026-06-06T12:00:00.000Z",
   "subsystems": {
     "jobStore": { "status": "ok", "totalJobs": 42 },
@@ -95,9 +123,9 @@ Detailed health check including subsystem status.
 
 ---
 
-#### `GET /api/metrics`
+### `GET /api/metrics`
 
-Operational metrics for monitoring.
+Operational metrics for monitoring dashboards.
 
 **Response 200:**
 ```json
@@ -109,21 +137,19 @@ Operational metrics for monitoring.
   },
   "cache":    { "total": 10, "active": 8, "expired": 2 },
   "averages": { "score": 74, "crawlMs": 2840 },
-  "memory":   { "rss": 52428800, "heapUsed": 24000000 }
+  "memory":   { "rss": 52428800, "heapUsed": 24000000, "external": 1000000 }
 }
 ```
 
 ---
 
-### Audit
+## Audit
 
----
+### `POST /api/audit` — Async ⚡
 
-#### `POST /api/audit` ⚡ Async
+Start an audit job. Returns a `jobId` immediately — the crawl runs in the background. Poll `/api/jobs/:jobId` for the result.
 
-Start an audit job. Returns immediately with a `jobId`. Poll `/api/jobs/:jobId` for the result.
-
-**Request:**
+**Request body:**
 ```json
 {
   "url":   "https://example.com",
@@ -131,44 +157,49 @@ Start an audit job. Returns immediately with a `jobId`. Poll `/api/jobs/:jobId` 
 }
 ```
 
-| Field | Type | Required | Description |
-|---|---|---|---|
-| `url` | string | ✅ | Website URL to audit (http or https) |
-| `force` | boolean | ❌ | Bypass cache and re-crawl (default: false) |
+| Field | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `url` | string | ✅ | — | Website URL (http or https) |
+| `force` | boolean | ❌ | `false` | Bypass 10-min cache and re-crawl |
 
 **Response 202:**
 ```json
 {
-  "status":   "accepted",
-  "jobId":    "job_lx3k2_abc12",
-  "siteId":   "example-com",
-  "url":      "https://example.com",
-  "pollUrl":  "/api/jobs/job_lx3k2_abc12",
-  "message":  "Audit started. Poll pollUrl for status and result."
+  "status":  "accepted",
+  "jobId":   "job_lx3k2_abc12",
+  "siteId":  "example-com",
+  "url":     "https://example.com",
+  "pollUrl": "/api/jobs/job_lx3k2_abc12",
+  "message": "Audit started. Poll pollUrl for status and result."
 }
 ```
 
-**Response 400 — invalid URL:**
-```json
-{
-  "error":   "Invalid URL",
-  "message": "URL must start with http:// or https://"
-}
+**Polling pattern:**
+```js
+// Start
+const { jobId } = await POST('/api/audit', { url })
+
+// Poll every 2s
+const job = await GET(`/api/jobs/${jobId}`)
+if (job.status === 'completed') use(job.result)
+if (job.status === 'failed')    handle(job.error)
 ```
 
-**Response 429 — rate limited:**
-```json
-{
-  "error":       "Rate limit exceeded",
-  "retryAfter":  42
-}
-```
+**Error responses:**
+
+| Status | Condition |
+|---|---|
+| 400 | Invalid or malformed URL |
+| 403 | robots.txt disallows crawler bot (checked before job creation) |
+| 429 | Rate limit exceeded |
+
+**Cache hit (200):** If a cached result exists and `force` is not set, returns the full audit result immediately with `"cached": true` instead of creating a new job.
 
 ---
 
-#### `POST /api/audit/sync` 🔄 Synchronous
+### `POST /api/audit/sync` — Synchronous 🔄
 
-Same as `/api/audit` but waits for the crawl to finish and returns the full result directly. Response can take 2–15 seconds depending on the site.
+Same logic as async, but waits for the crawl to complete before responding. Response time: 1–15 seconds.
 
 **Request:** Same as `POST /api/audit`
 
@@ -202,25 +233,25 @@ Same as `/api/audit` but waits for the crawl to finish and returns the full resu
     "crawlMs":                 2840
   },
   "checks": {
-    "robotsTxt":     true,
-    "sitemapXml":    true,
-    "llmsTxtExists": false,
-    "canonicalUrls": true,
-    "h1Structure":   true,
+    "robotsTxt":       true,
+    "sitemapXml":      true,
+    "llmsTxtExists":   false,
+    "canonicalUrls":   true,
+    "h1Structure":     true,
     "metaDescription": true,
     "structuredData":  false,
     "openGraph":       true
   },
   "issues": [
-    { "severity": "warning", "message": "No llms.txt found on target site — GlassGate will generate one" },
+    { "severity": "warning", "message": "No llms.txt found on target site — glasgate.ai will generate one" },
     { "severity": "info",    "message": "No JSON-LD structured data found" }
   ]
 }
 ```
 
-**Cached response** (same shape, with `"cached": true`)
+If the result was from cache: `"cached": true`
 
-**Response 500 — crawl failed:**
+**Response 500 — all pages failed:**
 ```json
 {
   "error":   "Audit failed",
@@ -231,21 +262,19 @@ Same as `/api/audit` but waits for the crawl to finish and returns the full resu
 
 ---
 
-### Jobs
+## Jobs
 
----
+### `GET /api/jobs`
 
-#### `GET /api/jobs`
+List all audit jobs, newest first.
 
-List all audit jobs with pagination.
+**Query parameters:**
 
-**Query params:**
-
-| Param | Type | Default | Description |
-|---|---|---|---|
-| `status` | string | — | Filter: `pending`, `running`, `completed`, `failed` |
-| `limit` | number | 20 | Max results (max 100) |
-| `offset` | number | 0 | Pagination offset |
+| Param | Type | Default | Max | Description |
+|---|---|---|---|---|
+| `status` | string | — | — | Filter: `pending`, `running`, `completed`, `failed` |
+| `limit` | number | `20` | `100` | Results per page |
+| `offset` | number | `0` | — | Pagination offset |
 
 **Response 200:**
 ```json
@@ -262,9 +291,9 @@ List all audit jobs with pagination.
       "createdAt":   1717675200000,
       "startedAt":   1717675201000,
       "completedAt": 1717675204000,
-      "result":      { ... },
+      "result":      { "score": 82, "..." },
       "error":       null,
-      "logs":        ["[2026-06-06T12:00:01Z] Starting audit...", "..."]
+      "logs":        ["[2026-06-06T12:00:01Z] Starting audit..."]
     }
   ]
 }
@@ -272,9 +301,9 @@ List all audit jobs with pagination.
 
 ---
 
-#### `GET /api/jobs/:jobId`
+### `GET /api/jobs/:jobId`
 
-Get a single job by ID.
+Get full status, logs, and result for a single job.
 
 **Response 200:**
 ```json
@@ -286,42 +315,47 @@ Get a single job by ID.
   "createdAt":   1717675200000,
   "startedAt":   1717675201000,
   "completedAt": 1717675204000,
-  "result":      { ... full audit result ... },
-  "error":       null,
+  "result": { "...full audit result..." },
+  "error":  null,
   "logs": [
     "[2026-06-06T12:00:01Z] Starting audit for https://example.com",
     "[2026-06-06T12:00:01Z] Fetching robots.txt",
+    "[2026-06-06T12:00:01Z] Checking for existing llms.txt",
+    "[2026-06-06T12:00:01Z] Fetching sitemap.xml",
+    "[2026-06-06T12:00:01Z] Crawl queue: 3 URL(s)",
     "[2026-06-06T12:00:02Z] Crawling https://example.com/",
-    "[2026-06-06T12:00:04Z] Done in 2840ms. Score: 82/100"
+    "[2026-06-06T12:00:03Z]   ↳ OK: \"Example Domain\" (31 words)",
+    "[2026-06-06T12:00:03Z] Scoring site",
+    "[2026-06-06T12:00:03Z] Generating artifacts",
+    "[2026-06-06T12:00:03Z] Saving artifacts to disk",
+    "[2026-06-06T12:00:03Z] Done in 2840ms. Score: 82/100"
   ]
 }
-```
-
-**Response 404:**
-```json
-{ "error": "Job not found", "jobId": "job_lx3k2_abc12" }
 ```
 
 **Job status values:**
 
 | Status | Description |
 |---|---|
-| `pending` | Job created, not yet started |
+| `pending` | Created, not yet started |
 | `running` | Crawl in progress |
-| `completed` | Crawl done, `result` is populated |
-| `failed` | Crawl failed, `error` is populated |
+| `completed` | Done — `result` populated |
+| `failed` | Error — `error` populated |
+
+**Response 404:**
+```json
+{ "error": "Job not found", "jobId": "job_lx3k2_abc12" }
+```
 
 ---
 
-### Sites
+## Sites
 
----
+### `GET /api/sites`
 
-#### `GET /api/sites`
+List all indexed sites. Reads from `generated/` directory.
 
-List all indexed sites.
-
-**Query params:** `limit` (default 20), `offset` (default 0)
+**Query parameters:** `limit` (default 20, max 100), `offset` (default 0)
 
 **Response 200:**
 ```json
@@ -346,11 +380,11 @@ List all indexed sites.
 
 ---
 
-#### `GET /api/sites/:siteId`
+### `GET /api/sites/:siteId`
 
-Full audit result for a site.
+Full site index for a site (reads `ai-index.json`).
 
-**Response 200:** Full `ai-index.json` object (same as audit result).
+**Response 200:** `ai-index.json` schema with `site`, `agentReadinessScore`, `artifacts`, `pages`, `metrics`, `checks`, and `issues`.
 
 **Response 404:**
 ```json
@@ -359,40 +393,31 @@ Full audit result for a site.
 
 ---
 
-#### `GET /api/sites/:siteId/artifacts`
+### `GET /api/sites/:siteId/score`
 
-Artifact paths only.
-
-**Response 200:**
-```json
-{
-  "siteId":    "example-com",
-  "artifacts": { "llmsTxt": "...", "llmsFullTxt": "...", "aiIndex": "..." },
-  "pages":     [{ "url": "...", "markdownUrl": "...", "jsonUrl": "..." }]
-}
-```
-
----
-
-#### `GET /api/sites/:siteId/score`
-
-Score and checks only.
+Score breakdown and issue list only.
 
 **Response 200:**
 ```json
 {
   "siteId": "example-com",
   "score":  82,
-  "checks": { "robotsTxt": true, "sitemapXml": true, ... },
-  "issues": [{ "severity": "warning", "message": "..." }]
+  "checks": {
+    "robotsTxt": true, "sitemapXml": true, "llmsTxtExists": false,
+    "canonicalUrls": true, "h1Structure": true, "metaDescription": true,
+    "structuredData": false, "openGraph": true
+  },
+  "issues": [
+    { "severity": "warning", "message": "No llms.txt found on target site — glasgate.ai will generate one" }
+  ]
 }
 ```
 
 ---
 
-#### `GET /api/sites/:siteId/metrics`
+### `GET /api/sites/:siteId/metrics`
 
-Token savings and performance metrics only.
+Token savings and crawl performance metrics only.
 
 **Response 200:**
 ```json
@@ -409,20 +434,44 @@ Token savings and performance metrics only.
 
 ---
 
-### Search
+### `GET /api/sites/:siteId/artifacts`
+
+Artifact file paths only.
+
+**Response 200:**
+```json
+{
+  "siteId": "example-com",
+  "artifacts": {
+    "llmsTxt":     "/generated/example-com/llms.txt",
+    "llmsFullTxt": "/generated/example-com/llms-full.txt",
+    "aiIndex":     "/generated/example-com/ai-index.json"
+  },
+  "pages": [
+    {
+      "url":         "https://example.com/",
+      "title":       "Example Domain",
+      "markdownUrl": "/generated/example-com/pages/home.md",
+      "jsonUrl":     "/generated/example-com/pages/home.json"
+    }
+  ]
+}
+```
 
 ---
 
-#### `GET /api/search?q=keyword`
+## Search
 
-Search across all indexed sites.
+### `GET /api/search?q=keyword`
 
-**Query params:**
+Full-text search across all indexed sites. Searches site titles, descriptions, and page titles.
 
-| Param | Type | Required | Description |
-|---|---|---|---|
-| `q` | string | ✅ | Search query (min 2 chars) |
-| `limit` | number | ❌ | Max results (default 10, max 50) |
+**Query parameters:**
+
+| Param | Type | Required | Default | Max | Description |
+|---|---|---|---|---|---|
+| `q` | string | ✅ | — | — | Search query (min 2 chars) |
+| `limit` | number | ❌ | `10` | `50` | Max results |
 
 **Response 200:**
 ```json
@@ -434,13 +483,13 @@ Search across all indexed sites.
       "siteId":          "example-com",
       "siteUrl":         "https://example.com",
       "siteTitle":       "Example Domain",
-      "siteDescription": "...",
+      "siteDescription": "Global logistics platform.",
       "score":           82,
       "matchedPages": [
         {
           "url":         "https://example.com/product",
           "title":       "Logistics Platform",
-          "description": "...",
+          "description": "Automate shipment planning.",
           "markdownUrl": "/generated/example-com/pages/product.md"
         }
       ],
@@ -458,13 +507,13 @@ Search across all indexed sites.
 
 ---
 
-### Generated Files (Static)
+## Static Files
 
-These are served directly as static files:
+Served directly from `generated/` — no auth required.
 
 | Path | Description |
 |---|---|
-| `GET /generated/:siteId/llms.txt` | AI-readable site index (Markdown) |
+| `GET /generated/:siteId/llms.txt` | AI site index (Markdown, llmstxt.org) |
 | `GET /generated/:siteId/llms-full.txt` | Full content corpus (Markdown) |
 | `GET /generated/:siteId/ai-index.json` | Structured site index (JSON) |
 | `GET /generated/:siteId/pages/:slug.md` | Single page Markdown mirror |
@@ -474,38 +523,39 @@ These are served directly as static files:
 
 ## AI Readiness Score
 
-The score (0–100) measures how well a site is optimized for AI agent consumption.
+Score (0–100) — how well a site is optimized for AI agent consumption.
 
-| Check | Points |
-|---|---|
-| `sitemapXml` | +15 |
-| `robotsTxt` | +10 |
-| `llmsTxtExists` | +10 |
-| `canonicalUrls` (all pages) | +15 |
-| `h1Structure` (all pages) | +15 |
-| `metaDescription` (all pages) | +10 |
-| `structuredData` (any page) | +10 |
-| Low boilerplate ratio | +5 |
-| `openGraph` | +5 |
-| Missing meta description | -10 |
-| No canonical URLs | -10 |
-| Very low text content | -5 |
+| Check | Points | Condition |
+|---|---|---|
+| `sitemapXml` | +15 | sitemap.xml found |
+| `robotsTxt` | +10 | robots.txt found |
+| `llmsTxtExists` | +10 | /llms.txt present on target site |
+| `canonicalUrls` | +15 | all crawled pages have `<link rel="canonical">` |
+| `h1Structure` | +15 | all crawled pages have H1 |
+| `metaDescription` | +10 | all crawled pages have meta description |
+| `structuredData` | +10 | any page has JSON-LD |
+| Low boilerplate | +5 | average word count > 100 |
+| `openGraph` | +5 | any page has OG tags |
+
+Partial credit (+5 to +8) is awarded when checks pass on some pages but not all. Issues are reported in the `issues` array.
 
 ---
 
-## Error Codes
+## Error Reference
 
-| HTTP | `error` | Description |
+| HTTP | `error` | When |
 |---|---|---|
-| 400 | `Invalid URL` | Malformed or non-http URL |
-| 400 | `Invalid query` | Search query too short |
-| 401 | `Unauthorized` | Missing or invalid API key |
-| 403 | `Crawl not allowed` | robots.txt blocks GlassGateBot |
-| 404 | `Site not found` | siteId not in generated/ |
+| 400 | `Invalid URL` | Malformed or non-http(s) URL |
+| 400 | `Invalid query` | Search query shorter than 2 chars |
+| 401 | `Unauthorized` | API key missing or wrong |
+| 403 | `Crawl not allowed` | robots.txt disallows GlassGateBot (checked before job start) |
+| 404 | `Site not found` | siteId not in `generated/` |
 | 404 | `Job not found` | jobId not in memory |
-| 429 | `Rate limit exceeded` | Too many requests |
-| 500 | `Audit failed` | All pages failed to crawl |
-| 500 | `Internal server error` | Unexpected error |
+| 429 | `Rate limit exceeded` | Too many requests; see `retryAfter` |
+| 500 | `Audit failed` | All page fetches failed |
+| 500 | `Internal server error` | Unexpected server error |
+
+All errors include `reqId` for tracing.
 
 ---
 
@@ -514,51 +564,57 @@ The score (0–100) measures how well a site is optimized for AI agent consumpti
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `3001` | Server port |
-| `NODE_ENV` | `development` | Environment |
-| `GLASGATE_API_KEY` | — | Enable API key auth |
-| `CRAWL_TIMEOUT` | `8000` | Page fetch timeout (ms) |
+| `NODE_ENV` | `development` | `production` enables JSON logs |
+| `GLASGATE_API_KEY` | — | Enable API key auth (disabled if unset) |
+| `CRAWL_TIMEOUT` | `8000` | Per-page fetch timeout (ms) |
 | `MAX_PAGES` | `5` | Max pages per audit |
-| `MAX_SITEMAP_URLS` | `20` | Max URLs from sitemap |
-| `CACHE_TTL_MS` | `600000` | Cache TTL (10 min) |
+| `MAX_SITEMAP_URLS` | `20` | Max URLs read from sitemap |
+| `CACHE_TTL_MS` | `600000` | Result cache TTL (10 min) |
 | `GENERATED_DIR` | `./generated` | Artifact output directory |
-| `LOG_LEVEL` | `info` | Log level (debug/info/warn/error) |
-| `BOT_USER_AGENT` | `GlassGateBot/0.1` | Crawler user agent |
+| `LOG_LEVEL` | `info` | `debug` / `info` / `warn` / `error` |
+| `BOT_USER_AGENT` | `GlassGateBot/0.1 (+https://glasgate.ai/bot)` | Crawler User-Agent header |
+| `ALLOWED_ORIGINS` | — | Comma-separated CORS origins (dev defaults added automatically) |
 
 ---
 
-## Quick Start
+## Frontend Integration
 
-```bash
-cd server
-npm install
-node index.js
+Add to `vite.config.js`:
+
+```js
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      '/api':       'http://localhost:3001',
+      '/generated': 'http://localhost:3001'
+    }
+  }
+})
 ```
 
-Test:
-```bash
-# Health check
-curl http://localhost:3001/api/health
+**Recommended async audit flow:**
+```js
+// 1. Start job
+const { jobId } = await fetch('/api/audit', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ url })
+}).then(r => r.json())
 
-# Async audit (recommended)
-curl -X POST http://localhost:3001/api/audit \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://stripe.com"}'
-# → returns jobId
-
-# Poll for result
-curl http://localhost:3001/api/jobs/<jobId>
-
-# Sync audit (simple, slower)
-curl -X POST http://localhost:3001/api/audit/sync \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://example.com"}'
-
-# Search indexed sites
-curl "http://localhost:3001/api/search?q=payments"
-
-# List all sites
-curl http://localhost:3001/api/sites
-
-# Metrics
-curl http://localhost:3001/api/metrics
+// 2. Poll
+const poll = setInterval(async () => {
+  const job = await fetch(`/api/jobs/${jobId}`).then(r => r.json())
+  if (job.status === 'completed') {
+    clearInterval(poll)
+    renderResult(job.result)
+  }
+  if (job.status === 'failed') {
+    clearInterval(poll)
+    showError(job.error)
+  }
+}, 2000)
 ```

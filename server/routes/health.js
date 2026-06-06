@@ -46,9 +46,9 @@ router.get("/health/detailed", (_req, res) => {
 
 /**
  * GET /api/metrics
- * Basic operational metrics.
+ * Basic operational metrics. Requires API auth when GLASGATE_API_KEY is set.
  */
-router.get("/metrics", (_req, res) => {
+export function metricsHandler(_req, res) {
   const jobs = listJobs({ limit: 1000 });
   const byStatus = { pending: 0, running: 0, completed: 0, failed: 0 };
   for (const job of jobs.jobs) byStatus[job.status] = (byStatus[job.status] || 0) + 1;
@@ -68,6 +68,6 @@ router.get("/metrics", (_req, res) => {
     averages: { score: avgScore, crawlMs: avgCrawlMs },
     memory: process.memoryUsage(),
   });
-});
+}
 
 export default router;

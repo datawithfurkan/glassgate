@@ -24,7 +24,7 @@ export function scoreSite(pages, siteChecks) {
   if (siteChecks.llmsTxtExists) {
     score += 10;
   } else {
-    issues.push({ severity: "warning", message: "No llms.txt found on target site — GlassGate will generate one" });
+    issues.push({ severity: "warning", message: "No llms.txt found on target site — glasgate.ai will generate one" });
   }
 
   if (pages.length === 0) {

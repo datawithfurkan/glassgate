@@ -1,0 +1,20 @@
+{
+  "url": "https://glasgate.ai/",
+  "canonicalUrl": "https://glasgate.ai/",
+  "title": "glasgate.ai — AI-ready data pipelines for the web",
+  "description": "Turn any website into clean, structured, AI-ready data for AI agents and automations.",
+  "language": "en",
+  "headings": [
+    { "level": 1, "text": "glasgate.ai — AI-ready data pipelines for the web" },
+    { "level": 2, "text": "What glasgate.ai does" }
+  ],
+  "bodyText": "Turn any website into clean, structured, AI-ready data for AI agents, LLMs, RAG systems, search, automations, and business workflows.",
+  "wordCount": 412,
+  "contentHash": "demo-home-hash",
+  "agentRepresentation": {
+    "markdownUrl": "/generated/demo-glasgate/pages/home.md",
+    "jsonUrl": "/generated/demo-glasgate/pages/home.json"
+  },
+  "generator": "glasgate.ai",
+  "generatorVersion": "0.1.0"
+}

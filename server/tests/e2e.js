@@ -1,5 +1,5 @@
 /**
- * GlassGate — End-to-End Test Suite
+ * glasgate.ai — End-to-End Test Suite
  *
  * Tests the full audit pipeline against a live backend.
  * Run: node server/tests/e2e.js
@@ -275,7 +275,7 @@ async function testSearchAPI() {
 async function testRateLimiting() {
   console.log("\n── Rate Limit Headers ───────────────────────────");
 
-  const res = await fetch(`${BASE_URL}/api/health`);
+  const res = await fetch(`${BASE_URL}/api/sites`);
   assert("X-RateLimit-Limit header present", res.headers.has("x-ratelimit-limit"));
   assert("X-RateLimit-Remaining header present", res.headers.has("x-ratelimit-remaining"));
   assert("X-Request-ID header present", res.headers.has("x-request-id"));
@@ -285,7 +285,7 @@ async function testRateLimiting() {
 
 async function run() {
   console.log(`\n${"═".repeat(52)}`);
-  console.log(`  GlassGate E2E Test Suite`);
+  console.log(`  glasgate.ai E2E Test Suite`);
   console.log(`  Backend: ${BASE_URL}`);
   console.log(`  Target:  ${TEST_URL}`);
   console.log(`${"═".repeat(52)}`);

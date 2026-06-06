@@ -1,6 +1,6 @@
-# GlassGate
+# glasgate.ai
 
-**The Agent Delivery Network for the web.**
+**AI-ready data pipelines for the web.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-green)](https://nodejs.org)
@@ -8,14 +8,13 @@
 
 ---
 
-## What is GlassGate?
+## What is glasgate.ai?
 
 Websites were built for browsers and search crawlers. The next users of the internet are AI agents — and they read through noisy HTML, waste tokens on navigation and boilerplate, and have no reliable way to find canonical, structured source data.
 
-**GlassGate turns any website into structured, verified, low-latency endpoints for AI agents.**
+**glasgate.ai turns any website into clean, structured, AI-ready data for agents, LLMs, RAG systems, and automations.**
 
-> Cloudflare accelerates and protects websites for browsers.  
-> GlassGate structures and delivers websites for AI agents.
+> Turn any website into AI-ready data.
 
 ---
 
@@ -26,10 +25,10 @@ Websites were built for browsers and search crawlers. The next users of the inte
        │
        ▼
   ┌─────────────────────────────────────────┐
-  │            GlassGate Pipeline           │
+  │         glasgate.ai Pipeline            │
   │                                         │
-  │  Crawl → Extract → Normalize → Score   │
-  │       → Generate → Store → Serve       │
+  │  Crawl → Clean → Structure → Deliver   │
+  │       → Score → Generate → Serve       │
   └─────────────────────────────────────────┘
        │
        ▼
@@ -57,11 +56,8 @@ Websites were built for browsers and search crawlers. The next users of the inte
 git clone https://github.com/datawithfurkan/glassgate.git
 cd glassgate
 
-# Frontend deps
 npm install
-
-# Backend deps
-cd server && npm install && cd ..
+npm run install:server
 ```
 
 ### Run
@@ -87,24 +83,24 @@ npm run test:e2e
 npm test
 ```
 
+Copy `.env.example` to `.env` to customize backend settings.
+
 ---
 
 ## End-to-End Process
-
-This section describes the complete flow from URL input to AI-ready artifacts.
 
 ### Step 1 — Submit a URL
 
 ```bash
 curl -X POST http://localhost:3001/api/audit/sync \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://stripe.com"}'
+  -d '{"url": "https://example.com"}'
 ```
 
-### Step 2 — GlassGate crawls the site
+### Step 2 — glasgate.ai crawls the site
 
 ```
-→ Fetch robots.txt          check crawl permissions
+→ Fetch robots.txt          check crawl permissions (403 if blocked)
 → Fetch /llms.txt           check if site is already agent-ready
 → Fetch sitemap.xml         discover pages
 → Build crawl queue         up to 5 pages
@@ -116,7 +112,7 @@ curl -X POST http://localhost:3001/api/audit/sync \
 
 ### Step 3 — Score the site
 
-GlassGate computes an **AI Readiness Score** (0–100):
+glasgate.ai computes an **AI Readiness Score** (0–100) using additive checks:
 
 ```
 +15  sitemap.xml found
@@ -126,16 +122,15 @@ GlassGate computes an **AI Readiness Score** (0–100):
 +15  all pages have H1
 +10  all pages have meta description
 +10  any page has JSON-LD structured data
- +5  low boilerplate ratio
+ +5  low boilerplate ratio (avg words > 100)
  +5  Open Graph tags present
--10  no meta description
--10  no canonical URLs
- -5  very low text content
 ```
+
+Partial credit is awarded when checks pass on some pages but not all.
 
 ### Step 4 — Generate AI-readable artifacts
 
-For a site at `example.com`, GlassGate writes to `/generated/example-com/`:
+For a site at `example.com`, glasgate.ai writes to `/generated/example-com/`:
 
 | File | Format | Description |
 |---|---|---|
@@ -146,8 +141,6 @@ For a site at `example.com`, GlassGate writes to `/generated/example-com/`:
 | `pages/home.json` | JSON | Structured page: headings, links, facts, hash |
 
 ### Step 5 — Serve as static endpoints
-
-All artifacts are immediately accessible:
 
 ```
 GET /generated/example-com/llms.txt
@@ -160,29 +153,21 @@ GET /generated/example-com/pages/home.json
 
 ```json
 {
-  "status":          "completed",
-  "siteId":          "example-com",
-  "score":           82,
-  "pagesProcessed":  3,
+  "status": "completed",
+  "siteId": "example-com",
+  "score": 82,
+  "pagesProcessed": 3,
   "metrics": {
-    "htmlTokensEstimate":      18400,
-    "markdownTokensEstimate":  6200,
+    "htmlTokensEstimate": 18400,
+    "markdownTokensEstimate": 6200,
     "estimatedSavingsPercent": 66,
-    "crawlMs":                 2840
+    "crawlMs": 2840
   },
-  "checks": {
-    "robotsTxt":       true,
-    "sitemapXml":      true,
-    "canonicalUrls":   true,
-    "h1Structure":     true,
-    "metaDescription": true,
-    "structuredData":  false,
-    "llmsTxtExists":   false
-  },
-  "issues": [
-    { "severity": "warning", "message": "No llms.txt found — GlassGate will generate one" },
-    { "severity": "info",    "message": "No JSON-LD structured data found" }
-  ]
+  "artifacts": {
+    "llmsTxt": "/generated/example-com/llms.txt",
+    "llmsFullTxt": "/generated/example-com/llms-full.txt",
+    "aiIndex": "/generated/example-com/ai-index.json"
+  }
 }
 ```
 
@@ -190,125 +175,67 @@ GET /generated/example-com/pages/home.json
 
 ## API Overview
 
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/api/audit` | Start async audit → returns `jobId` |
-| `POST` | `/api/audit/sync` | Synchronous audit → returns full result |
-| `GET` | `/api/jobs/:id` | Poll job status, logs, and result |
-| `GET` | `/api/jobs` | List all jobs |
-| `GET` | `/api/sites` | List all indexed sites |
-| `GET` | `/api/sites/:id` | Full audit result for a site |
-| `GET` | `/api/sites/:id/score` | Score and checks only |
-| `GET` | `/api/sites/:id/metrics` | Token savings and performance |
-| `GET` | `/api/search?q=` | Search across all indexed sites |
-| `GET` | `/api/health` | Liveness check |
-| `GET` | `/api/metrics` | Operational metrics |
-| `GET` | `/generated/:id/*` | Static artifact files |
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `POST` | `/api/audit` | ✅ | Start async audit → returns `jobId` |
+| `POST` | `/api/audit/sync` | ✅ | Synchronous audit → returns full result |
+| `GET` | `/api/jobs/:id` | ✅ | Poll job status, logs, and result |
+| `GET` | `/api/jobs` | ✅ | List all jobs |
+| `GET` | `/api/sites` | ✅ | List all indexed sites |
+| `GET` | `/api/sites/:id` | ✅ | Full `ai-index.json` for a site |
+| `GET` | `/api/sites/:id/score` | ✅ | Score and checks only |
+| `GET` | `/api/sites/:id/metrics` | ✅ | Token savings and performance |
+| `GET` | `/api/search?q=` | ✅ | Search across indexed sites |
+| `GET` | `/api/health` | ❌ | Liveness check |
+| `GET` | `/api/health/detailed` | ❌ | Subsystem status |
+| `GET` | `/api/metrics` | ✅ | Operational metrics |
+| `GET` | `/generated/:id/*` | ❌ | Static artifact files |
 
 Full reference → [docs/API.md](docs/API.md)
 
 ---
 
-## Architecture
-
-```
-server/
-├── index.js              Entry point + middleware stack
-├── config.js             Environment-driven settings
-├── middleware/
-│   ├── requestId.js      X-Request-ID tracing
-│   ├── requestLogger.js  HTTP access logs
-│   ├── rateLimit.js      Per-IP sliding window limiter
-│   └── apiKey.js         Optional Bearer token auth
-├── routes/
-│   ├── audit.js          Async + sync audit endpoints
-│   ├── jobs.js           Job queue API
-│   ├── sites.js          Indexed sites API
-│   ├── search.js         Full-text search
-│   └── health.js         Health + metrics
-└── lib/
-    ├── validator.js       URL validation
-    ├── fetcher.js         HTTP fetch with timeout
-    ├── robots.js          robots.txt parsing
-    ├── sitemap.js         sitemap.xml parsing
-    ├── extractor.js       HTML → structured PageData
-    ├── normalizer.js      Content cleanup
-    ├── scorer.js          AI Readiness Score 0–100
-    ├── tokenEstimator.js  Token count comparison
-    ├── logger.js          Structured logging (JSON/pretty)
-    ├── jobStore.js        In-memory async job queue
-    ├── cache.js           In-memory TTL cache
-    ├── store.js           Disk read/write
-    └── generators/
-        ├── markdown.js    → page.md
-        ├── json.js        → page.json
-        ├── llmsTxt.js     → llms.txt
-        ├── llmsFullTxt.js → llms-full.txt
-        └── aiIndex.js     → ai-index.json
-```
-
-Full architecture → [docs/BACKEND_ARCHITECTURE.md](docs/BACKEND_ARCHITECTURE.md)
-
----
-
-## Enterprise Features
+## Backend Features
 
 | Feature | Implementation |
 |---|---|
 | Async job queue | In-memory, `pending → running → completed/failed` |
 | Job logs | Per-step crawl log accessible via API |
-| Result caching | 10-minute TTL, bypassable with `force: true` |
+| Result caching | Configurable TTL (`CACHE_TTL_MS`), bypass with `force: true` |
 | Rate limiting | 10 req/min (audit), 60 req/min (global), per IP |
-| Request tracing | `X-Request-ID` on every request and response |
+| Request tracing | `X-Request-ID` + `reqId` on every error response |
 | Structured logging | Pretty in dev, JSON lines in production |
 | API key auth | Optional, via `GLASGATE_API_KEY` env var |
-| Graceful errors | All failures return structured JSON, server never crashes |
+| robots.txt compliance | 403 before crawl if bot is disallowed |
+| Graceful shutdown | SIGTERM / SIGINT handlers |
+| Demo fixture | `generated/demo-glasgate/` for offline frontend demo |
 
 ---
 
 ## Configuration
 
+See [`.env.example`](.env.example) for all variables.
+
 | Variable | Default | Description |
 |---|---|---|
 | `PORT` | `3001` | Server port |
-| `NODE_ENV` | `development` | `production` → JSON logs |
+| `NODE_ENV` | `development` | `production` → JSON logs, sanitized errors |
 | `GLASGATE_API_KEY` | — | Enable API key auth |
 | `CRAWL_TIMEOUT` | `8000` | Per-page timeout (ms) |
 | `MAX_PAGES` | `5` | Max pages per audit |
 | `CACHE_TTL_MS` | `600000` | Cache TTL (10 min) |
-| `LOG_LEVEL` | `info` | `debug` / `info` / `warn` / `error` |
+| `GENERATED_DIR` | `./generated` | Artifact output directory |
+| `BOT_USER_AGENT` | `GlassGateBot/0.1 (+https://glasgate.ai/bot)` | Crawler UA |
 
 ---
 
 ## What This Is Not
 
-GlassGate is **not** AI SEO manipulation, hidden content, or cloaking.
+glasgate.ai is **not** AI SEO manipulation, hidden content, or cloaking.
 
-The human-facing website remains canonical. GlassGate generates public, alternate representations of the same visible content so AI systems can parse it more reliably. All generated content matches what human users see.
+The human-facing website remains canonical. glasgate.ai generates public, alternate representations of the same visible content so AI systems can parse it more reliably.
 
-We do not promise:
-- Guaranteed AI ranking improvements
-- Hidden pages visible only to bots
-- Fake backlinks or misleading content
-
----
-
-## Roadmap
-
-| Feature | Status |
-|---|---|
-| Core crawler + 5 generators | ✅ Done |
-| Async job queue | ✅ Done |
-| Rate limiting + auth + logging | ✅ Done |
-| Search API | ✅ Done |
-| Frontend (Vite + React) | ✅ Done |
-| Frontend ↔ Backend wiring | 🔄 In progress (Codex) |
-| End-to-end tests | ✅ Done |
-| Playwright (JS-heavy sites) | ⬜ Planned |
-| PostgreSQL persistence | ⬜ Planned |
-| Redis (jobs + cache) | ⬜ Planned |
-| Webhook on job completion | ⬜ Planned |
-| Multi-tenant / user accounts | ⬜ Planned |
+We do not promise guaranteed AI ranking improvements, hidden bot-only pages, or fake backlinks.
 
 ---
 

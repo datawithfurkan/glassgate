@@ -1,21 +1,25 @@
 import { Router } from "express";
 import { getJob, listJobs } from "../lib/jobStore.js";
+import { parsePagination, validateJobStatus } from "../lib/validator.js";
 
 const router = Router();
 
 /**
  * GET /api/jobs
  * List all jobs with optional filtering and pagination.
- *
- * Query params:
- *   status  — filter by status (pending|running|completed|failed)
- *   limit   — max results (default 20, max 100)
- *   offset  — pagination offset (default 0)
  */
 router.get("/", (req, res) => {
-  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
-  const offset = parseInt(req.query.offset) || 0;
+  const { limit, offset } = parsePagination(req.query, { defaultLimit: 20, maxLimit: 100 });
   const { status } = req.query;
+
+  const statusValidation = validateJobStatus(status);
+  if (!statusValidation.valid) {
+    return res.status(400).json({
+      error: "Invalid status",
+      message: statusValidation.error,
+      reqId: req.requestId,
+    });
+  }
 
   const result = listJobs({ limit, offset, status });
 
@@ -23,6 +27,7 @@ router.get("/", (req, res) => {
     ...result,
     limit,
     offset,
+    reqId: req.requestId,
   });
 });
 
@@ -37,10 +42,11 @@ router.get("/:jobId", (req, res) => {
     return res.status(404).json({
       error: "Job not found",
       jobId: req.params.jobId,
+      reqId: req.requestId,
     });
   }
 
-  res.json(job);
+  res.json({ ...job, reqId: req.requestId });
 });
 
 export default router;

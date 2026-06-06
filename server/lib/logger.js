@@ -1,5 +1,5 @@
 /**
- * Structured logger for GlassGate backend.
+ * Structured logger for glasgate.ai backend.
  * Outputs JSON in production, human-readable in development.
  */
 

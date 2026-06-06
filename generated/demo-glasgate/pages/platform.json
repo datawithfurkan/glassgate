@@ -1,0 +1,20 @@
+{
+  "url": "https://glasgate.ai/platform",
+  "canonicalUrl": "https://glasgate.ai/platform",
+  "title": "Platform — glasgate.ai",
+  "description": "One platform for AI-ready data pipelines.",
+  "language": "en",
+  "headings": [
+    { "level": 1, "text": "Platform — glasgate.ai" },
+    { "level": 2, "text": "Capabilities" }
+  ],
+  "bodyText": "Data extraction, structured outputs, APIs and delivery, observability.",
+  "wordCount": 318,
+  "contentHash": "demo-platform-hash",
+  "agentRepresentation": {
+    "markdownUrl": "/generated/demo-glasgate/pages/platform.md",
+    "jsonUrl": "/generated/demo-glasgate/pages/platform.json"
+  },
+  "generator": "glasgate.ai",
+  "generatorVersion": "0.1.0"
+}

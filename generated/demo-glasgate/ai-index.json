@@ -1,8 +1,8 @@
 {
   "site": {
     "url": "https://glasgate.ai",
-    "title": "GlassGate",
-    "description": "GlassGate is an Agent Delivery Network that turns websites into structured, verified endpoints for AI agents.",
+    "title": "glasgate.ai",
+    "description": "AI-ready data pipelines for the web. Turn any website into clean, structured data for AI agents and automations.",
     "language": "en",
     "lastIndexedAt": "2026-06-06T12:00:00.000Z"
   },
@@ -19,14 +19,16 @@
   },
   "artifacts": {
     "llmsTxt": "/generated/demo-glasgate/llms.txt",
-    "llmsFullTxt": "/generated/demo-glasgate/llms-full.txt"
+    "llmsFullTxt": "/generated/demo-glasgate/llms-full.txt",
+    "aiIndex": "/generated/demo-glasgate/ai-index.json"
   },
   "pages": [
     {
       "url": "https://glasgate.ai/",
-      "title": "GlassGate — Agent Delivery Network",
-      "description": "Turn any website into structured, verified endpoints for AI agents.",
+      "title": "glasgate.ai — AI-ready data pipelines for the web",
+      "description": "Turn any website into clean, structured, AI-ready data for AI agents and automations.",
       "language": "en",
+      "bodyText": "Turn any website into clean, structured, AI-ready data for AI agents, LLMs, RAG systems, search, automations, and business workflows.",
       "markdownUrl": "/generated/demo-glasgate/pages/home.md",
       "jsonUrl": "/generated/demo-glasgate/pages/home.json",
       "wordCount": 412,
@@ -35,9 +37,10 @@
     },
     {
       "url": "https://glasgate.ai/platform",
-      "title": "Platform — GlassGate",
-      "description": "Crawl, clean, structure and deliver web content for AI agents.",
+      "title": "Platform — glasgate.ai",
+      "description": "One platform for AI-ready data pipelines.",
       "language": "en",
+      "bodyText": "Data extraction, structured outputs, APIs and delivery, observability.",
       "markdownUrl": "/generated/demo-glasgate/pages/platform.md",
       "jsonUrl": "/generated/demo-glasgate/pages/platform.json",
       "wordCount": 318,
@@ -50,11 +53,12 @@
     "totalWords": 730,
     "htmlTokensEstimate": 18400,
     "markdownTokensEstimate": 6200,
-    "estimatedSavingsPercent": 66
+    "estimatedSavingsPercent": 66,
+    "crawlMs": 1240
   },
   "issues": [
-    { "severity": "warning", "message": "No llms.txt found on target site — GlassGate will generate one" },
-    { "severity": "info",    "message": "No JSON-LD structured data found" }
+    { "severity": "warning", "message": "No llms.txt found on target site — glasgate.ai will generate one" },
+    { "severity": "info", "message": "No JSON-LD structured data found" }
   ],
   "generator": "glasgate.ai",
   "generatorVersion": "0.1.0"

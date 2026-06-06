@@ -1,26 +1,25 @@
 ---
-title: "GlassGate — Agent Delivery Network"
+title: glasgate.ai — AI-ready data pipelines for the web
 url: https://glasgate.ai/
 canonical: https://glasgate.ai/
-description: "Turn any website into structured, verified endpoints for AI agents."
+description: Turn any website into clean, structured, AI-ready data for AI agents and automations.
 language: en
-crawledAt: 2026-06-06T12:00:00.000Z
 generator: glasgate.ai
 ---
 
-# GlassGate — Agent Delivery Network
+# glasgate.ai — AI-ready data pipelines for the web
 
-> Turn any website into structured, verified endpoints for AI agents.
+Turn any website into clean, structured, AI-ready data for AI agents, LLMs, RAG systems, search, automations, and business workflows.
 
-Websites were built for browsers and search crawlers. But the next users of the internet are AI agents. GlassGate is an Agent Delivery Network that crawls, cleans, and structures your website so AI systems can read, cite, and act on your content reliably.
+## What glasgate.ai does
 
-## How it works
-
-GlassGate processes your website in five steps: Crawl, Clean, Structure, Deliver, Monitor. The result is a set of agent-ready files: llms.txt, Markdown mirrors, JSON facts, and a full AI index.
+1. Crawl website content
+2. Clean noise and boilerplate
+3. Structure content into schemas
+4. Deliver JSON / Markdown / APIs / indexes
+5. Monitor freshness, access, and data quality
 
 ## Links
 
 - [Platform](https://glasgate.ai/platform)
-- [Pricing](https://glasgate.ai/pricing)
 - [Docs](https://glasgate.ai/docs)
-- [Book a demo](https://glasgate.ai/demo)

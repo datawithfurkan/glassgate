@@ -1,0 +1,17 @@
+# glasgate.ai — Full Content Corpus
+
+> AI-ready data pipelines for the web.
+
+## Home
+
+# glasgate.ai — AI-ready data pipelines for the web
+
+Turn any website into clean, structured, AI-ready data for agents, LLMs, RAG systems, and automations.
+
+glasgate.ai crawls public websites, removes boilerplate, structures content into schemas, and delivers JSON, Markdown, indexes, and APIs.
+
+## Platform
+
+# Platform — glasgate.ai
+
+One platform for AI-ready data pipelines: extraction, structured outputs, APIs, delivery, and observability.

@@ -9,7 +9,6 @@ import config from "../config.js";
 export async function fetchSitemap(baseUrl, robotsRaw = null) {
   const candidates = [new URL("/sitemap.xml", baseUrl).href];
 
-  // Also try sitemap URL from robots.txt
   if (robotsRaw) {
     const fromRobots = extractSitemapFromRobots(robotsRaw);
     if (fromRobots && !candidates.includes(fromRobots)) {
@@ -30,35 +29,39 @@ export async function fetchSitemap(baseUrl, robotsRaw = null) {
   return { exists: false, urls: [] };
 }
 
+function isPageUrl(loc) {
+  try {
+    const pathname = new URL(loc).pathname.toLowerCase();
+    return !pathname.includes("sitemap");
+  } catch {
+    return false;
+  }
+}
+
 /**
- * Parse sitemap XML and return array of URLs.
+ * Parse sitemap XML and return array of page URLs.
  * Handles both sitemap index and URL set.
  */
 function parseSitemapXml(xml, baseUrl) {
   const urls = [];
-
-  // Extract all <loc> entries
   const locMatches = xml.matchAll(/<loc>\s*(.*?)\s*<\/loc>/gi);
+
   for (const match of locMatches) {
     const loc = match[1].trim();
     if (!loc) continue;
 
-    // Filter to same-origin URLs only
     try {
       const parsed = new URL(loc);
       const base = new URL(baseUrl);
-      if (parsed.hostname === base.hostname) {
-        // Skip sitemap index files (they end in sitemap.xml or sitemap_index.xml)
-        if (!loc.includes("sitemap") || loc === loc) {
-          urls.push(loc);
-        }
+      if (parsed.hostname === base.hostname && isPageUrl(loc)) {
+        urls.push(loc);
       }
     } catch {
       // skip invalid URLs
     }
   }
 
-  return [...new Set(urls)]; // deduplicate
+  return [...new Set(urls)];
 }
 
 /**
@@ -67,6 +70,6 @@ function parseSitemapXml(xml, baseUrl) {
  */
 export function buildCrawlQueue(baseUrl, sitemapUrls, maxPages = config.maxPages) {
   const homepage = baseUrl.replace(/\/$/, "");
-  const all = [homepage, ...sitemapUrls.filter((u) => u !== homepage)];
+  const all = [homepage, ...sitemapUrls.filter((u) => u.replace(/\/$/, "") !== homepage)];
   return [...new Set(all)].slice(0, maxPages);
 }

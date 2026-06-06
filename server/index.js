@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -10,45 +11,33 @@ import { requestLoggerMiddleware } from "./middleware/requestLogger.js";
 import { rateLimit } from "./middleware/rateLimit.js";
 import { apiKeyAuth } from "./middleware/apiKey.js";
 
-import healthRouter from "./routes/health.js";
+import healthRouter, { metricsHandler } from "./routes/health.js";
 import auditRouter from "./routes/audit.js";
 import sitesRouter from "./routes/sites.js";
 import jobsRouter from "./routes/jobs.js";
 import searchRouter from "./routes/search.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-
-// ─── Global Middleware ────────────────────────────────────────────────────────
 
 app.set("trust proxy", 1);
 app.use(requestIdMiddleware);
 app.use(requestLoggerMiddleware);
-app.use(cors({ origin: config.allowedOrigins, exposedHeaders: ["X-Request-ID"] }));
+app.use(cors({ origin: config.allowedOrigins, exposedHeaders: ["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"] }));
 app.use(express.json({ limit: "1mb" }));
 
-// ─── Static: generated artifacts ─────────────────────────────────────────────
-
-const generatedDir = path.resolve(__dirname, "..", config.generatedDir);
-app.use("/generated", express.static(generatedDir));
-
-// ─── Public Routes (no auth) ──────────────────────────────────────────────────
+app.use("/generated", express.static(config.generatedDir));
 
 app.use("/api", healthRouter);
 
-// ─── Rate-limited + Auth Routes ───────────────────────────────────────────────
-
-const auditLimiter = rateLimit({ windowMs: 60_000, max: 10, message: "Audit rate limit: 10 requests/minute" });
-const apiLimiter   = rateLimit({ windowMs: 60_000, max: 60 });
+const apiLimiter = rateLimit({ windowMs: 60_000, max: 60 });
 
 app.use("/api", apiKeyAuth);
 app.use("/api", apiLimiter);
-app.use("/api", auditLimiter, auditRouter);
+app.get("/api/metrics", metricsHandler);
 app.use("/api/sites",  sitesRouter);
 app.use("/api/jobs",   jobsRouter);
 app.use("/api/search", searchRouter);
-
-// ─── 404 ──────────────────────────────────────────────────────────────────────
+app.use("/api", auditRouter);
 
 app.use((req, res) => {
   res.status(404).json({
@@ -58,24 +47,30 @@ app.use((req, res) => {
   });
 });
 
-// ─── Error Handler ────────────────────────────────────────────────────────────
-
 app.use((err, req, res, _next) => {
   logger.error("Unhandled error", { error: err.message, reqId: req.requestId });
   res.status(500).json({
     error: "Internal server error",
-    message: err.message,
+    message: config.nodeEnv === "production" ? "An unexpected error occurred" : err.message,
     reqId: req.requestId,
   });
 });
 
-// ─── Start ────────────────────────────────────────────────────────────────────
+async function ensureGeneratedDir() {
+  await fs.mkdir(config.generatedDir, { recursive: true });
+  const probe = path.join(config.generatedDir, ".write-test");
+  await fs.writeFile(probe, "ok", "utf8");
+  await fs.unlink(probe);
+}
 
-app.listen(config.port, () => {
-  logger.info(`GlassGate backend started`, { port: config.port });
-  console.log(`
+async function start() {
+  await ensureGeneratedDir();
+
+  const server = app.listen(config.port, () => {
+    logger.info("glasgate.ai backend started", { port: config.port });
+    console.log(`
   ┌─────────────────────────────────────────┐
-  │  🟢  GlassGate API  v0.1.0              │
+  │  🟢  glasgate.ai API  v0.1.0            │
   │                                         │
   │  http://localhost:${config.port}                │
   │                                         │
@@ -88,4 +83,24 @@ app.listen(config.port, () => {
   │  GET  /api/metrics                      │
   └─────────────────────────────────────────┘
 `);
-});
+  });
+
+  const shutdown = (signal) => {
+    logger.info("Shutting down", { signal });
+    server.close(() => process.exit(0));
+  };
+
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
+}
+
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
+
+if (isMain) {
+  start().catch((err) => {
+    logger.error("Failed to start server", { error: err.message });
+    process.exit(1);
+  });
+}
+
+export { app, start };

@@ -1,4 +1,11 @@
 import { fetchText } from "./fetcher.js";
+import config from "../config.js";
+
+/** Extract bot name from configured User-Agent string. */
+export function botNameFromUserAgent(userAgent = config.userAgent) {
+  const match = String(userAgent).match(/^([^\s(+/]+)/);
+  return match ? match[1] : "GlassGateBot";
+}
 
 /**
  * Fetch and parse robots.txt for a given base URL.
@@ -6,72 +13,95 @@ import { fetchText } from "./fetcher.js";
 export async function fetchRobots(baseUrl) {
   const url = new URL("/robots.txt", baseUrl).href;
   const raw = await fetchText(url);
+  const botName = botNameFromUserAgent();
 
-  if (!raw) return { exists: false, allowsGlassGate: true, raw: null };
+  if (!raw) return { exists: false, allowsGlassGate: true, raw: null, botName };
 
-  const allowsGlassGate = isAllowed(raw, baseUrl, "GlassGateBot");
+  const allowsGlassGate = isAllowed(raw, baseUrl, botName);
 
-  return { exists: true, allowsGlassGate, raw };
+  return { exists: true, allowsGlassGate, raw, botName };
+}
+
+/**
+ * Parse robots.txt into user-agent blocks.
+ */
+function parseBlocks(robotsTxt) {
+  const lines = robotsTxt
+    .split(/\r?\n/)
+    .map((line) => line.split("#")[0].trim())
+    .filter(Boolean);
+
+  const blocks = [];
+  let current = { agents: [], disallow: [], allow: [] };
+
+  for (const line of lines) {
+    const colon = line.indexOf(":");
+    if (colon === -1) continue;
+
+    const key = line.slice(0, colon).trim().toLowerCase();
+    const value = line.slice(colon + 1).trim();
+
+    if (key === "user-agent") {
+      if (current.agents.length > 0) {
+        blocks.push(current);
+        current = { agents: [], disallow: [], allow: [] };
+      }
+      current.agents.push(value);
+    } else if (key === "disallow") {
+      current.disallow.push(value);
+    } else if (key === "allow") {
+      current.allow.push(value);
+    }
+  }
+
+  if (current.agents.length > 0) blocks.push(current);
+  return blocks;
+}
+
+function pathMatches(rule, path) {
+  if (rule === "" || rule === undefined) return false;
+  if (rule === "/") return true;
+  return path.startsWith(rule);
+}
+
+function isPathAllowedInBlock(block, path) {
+  for (const allowRule of block.allow) {
+    if (pathMatches(allowRule, path)) return true;
+  }
+
+  for (const disallowRule of block.disallow) {
+    if (pathMatches(disallowRule, path)) return false;
+  }
+
+  return true;
 }
 
 /**
  * Simple robots.txt parser.
- * Checks if a given user-agent is allowed to crawl the given URL.
+ * Uses the last matching user-agent block (Google-style precedence).
  */
 export function isAllowed(robotsTxt, url, userAgent) {
   if (!robotsTxt) return true;
 
-  const lines = robotsTxt.split("\n").map((l) => l.trim());
-  let currentAgents = [];
-  let applies = false;
-  let disallowed = [];
-  let allowed = [];
-
-  for (const line of lines) {
-    if (line.startsWith("#") || line === "") {
-      if (currentAgents.length > 0 && line === "") {
-        // End of block — check if our agent matched
-        if (currentAgents.some((a) => a === "*" || a.toLowerCase() === userAgent.toLowerCase())) {
-          applies = true;
-        }
-        currentAgents = [];
-      }
-      continue;
-    }
-
-    const [key, ...rest] = line.split(":");
-    const value = rest.join(":").trim();
-
-    if (key.toLowerCase() === "user-agent") {
-      currentAgents.push(value);
-    } else if (key.toLowerCase() === "disallow") {
-      if (applies) disallowed.push(value);
-    } else if (key.toLowerCase() === "allow") {
-      if (applies) allowed.push(value);
-    }
-  }
-
-  // Handle last block
-  if (currentAgents.some((a) => a === "*" || a.toLowerCase() === userAgent.toLowerCase())) {
-    applies = true;
-  }
-
-  if (!applies) return true;
-
   let path = "/";
   try {
-    path = new URL(url).pathname;
-  } catch {}
-
-  for (const a of allowed) {
-    if (a && path.startsWith(a)) return true;
+    path = new URL(url).pathname || "/";
+  } catch {
+    return true;
   }
 
-  for (const d of disallowed) {
-    if (d && path.startsWith(d)) return false;
+  const ua = userAgent.toLowerCase();
+  const blocks = parseBlocks(robotsTxt);
+
+  let matchedBlock = null;
+  for (const block of blocks) {
+    if (block.agents.some((agent) => agent === "*" || agent.toLowerCase() === ua)) {
+      matchedBlock = block;
+    }
   }
 
-  return true;
+  if (!matchedBlock) return true;
+  return isPathAllowedInBlock(matchedBlock, path);
 }
 
 /**

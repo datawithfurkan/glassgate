@@ -1,12 +1,12 @@
 /**
- * GlassGate — Unit Tests
+ * glasgate.ai — Unit Tests
  *
  * Tests individual modules in isolation.
  * Run: node server/tests/unit.js
  */
 
-import { validateUrl, siteIdFromUrl, pageSlugFromUrl } from "../lib/validator.js";
-import { isAllowed } from "../lib/robots.js";
+import { validateUrl, siteIdFromUrl, pageSlugFromUrl, validateSiteId } from "../lib/validator.js";
+import { isAllowed, botNameFromUserAgent } from "../lib/robots.js";
 import { scoreSite } from "../lib/scorer.js";
 import { estimateTokens, compareTokens } from "../lib/tokenEstimator.js";
 import { generateLlmsTxt } from "../lib/generators/llmsTxt.js";
@@ -48,6 +48,10 @@ assert("slug from root", pageSlugFromUrl("https://example.com/") === "home");
 assert("slug from path", pageSlugFromUrl("https://example.com/about") === "about");
 assert("slug from nested", pageSlugFromUrl("https://example.com/blog/post-1") === "blog-post-1");
 
+assert("valid siteId", validateSiteId("example-com").valid === true);
+assert("invalid siteId with slash", validateSiteId("../etc").valid === false);
+assert("invalid siteId with dots", validateSiteId("..").valid === false);
+
 // ─── robots ───────────────────────────────────────────────────────────────────
 
 console.log("\n── robots.js ────────────────────────────────────");
@@ -62,6 +66,7 @@ assert("Allow: / allows everything", isAllowed(robots2, "https://x.com/anything"
 
 assert("empty robots.txt allows all", isAllowed("", "https://x.com/", "*") === true);
 assert("null robots.txt allows all", isAllowed(null, "https://x.com/", "*") === true);
+assert("bot name parsed from UA", botNameFromUserAgent("GlassGateBot/0.1 (+https://glasgate.ai/bot)") === "GlassGateBot");
 
 // ─── scorer ───────────────────────────────────────────────────────────────────
 
