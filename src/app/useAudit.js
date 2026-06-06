@@ -52,16 +52,17 @@ export function useAudit() {
       );
       return true;
     } catch (err) {
+      const detail = err?.message || "Connection failed";
       setApiStatus({
         state: "offline",
-        message: "API offline — run npm run dev:server (port 3001)",
+        message: `API offline — ${detail}`,
         latencyMs: null,
         version: null,
       });
       setJobLogs([
         "Backend not reachable at /api/health.",
-        "Start the server: npm run dev:server",
-        err?.message || "Connection failed.",
+        "Run: npm run dev:all  (starts API + frontend)",
+        detail,
       ]);
       return false;
     }
@@ -70,6 +71,22 @@ export function useAudit() {
   useEffect(() => {
     refreshApiStatus();
   }, [refreshApiStatus]);
+
+  useEffect(() => {
+    if (apiStatus.state !== "offline") return undefined;
+
+    const retryTimer = window.setInterval(() => {
+      refreshApiStatus();
+    }, 5000);
+
+    const onFocus = () => refreshApiStatus();
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      window.clearInterval(retryTimer);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, [apiStatus.state, refreshApiStatus]);
 
   async function runAudit() {
     if (apiStatus.state !== "connected") {

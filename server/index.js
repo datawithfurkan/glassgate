@@ -66,13 +66,13 @@ async function ensureGeneratedDir() {
 async function start() {
   await ensureGeneratedDir();
 
-  const server = app.listen(config.port, () => {
-    logger.info("glasgate.ai backend started", { port: config.port });
+  const server = app.listen(config.port, "127.0.0.1", () => {
+    logger.info("glasgate.ai backend started", { port: config.port, host: "127.0.0.1" });
     console.log(`
   ┌─────────────────────────────────────────┐
   │  🟢  glasgate.ai API  v0.1.0            │
   │                                         │
-  │  http://localhost:${config.port}                │
+  │  http://127.0.0.1:${config.port}              │
   │                                         │
   │  POST /api/audit                        │
   │  POST /api/audit/sync                   │
