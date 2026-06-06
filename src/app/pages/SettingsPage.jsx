@@ -2,14 +2,19 @@ import { useState } from "react";
 import { AppShell } from "../AppShell.jsx";
 
 export function SettingsPage() {
-  const [apiKey, setApiKey] = useState("");
-  const [maxPages, setMaxPages] = useState("5");
+  const [apiKey, setApiKey] = useState(() => sessionStorage.getItem("glasgate_api_key") || "");
+  const [maxPages, setMaxPages] = useState("10");
   const [crawlTimeout, setCrawlTimeout] = useState("8000");
   const [notifications, setNotifications] = useState(true);
   const [saved, setSaved] = useState(false);
 
   function handleSave(event) {
     event.preventDefault();
+    if (apiKey.trim()) {
+      sessionStorage.setItem("glasgate_api_key", apiKey.trim());
+    } else {
+      sessionStorage.removeItem("glasgate_api_key");
+    }
     setSaved(true);
     window.setTimeout(() => setSaved(false), 2200);
   }

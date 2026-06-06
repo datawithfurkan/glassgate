@@ -8,5 +8,11 @@ export default defineConfig({
       "/api": "http://localhost:3001",
       "/generated": "http://localhost:3001"
     }
+  },
+  preview: {
+    proxy: {
+      "/api": "http://localhost:3001",
+      "/generated": "http://localhost:3001"
+    }
   }
 });

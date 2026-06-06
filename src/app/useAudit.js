@@ -1,59 +1,115 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { checkApiHealth } from "./api.js";
 import {
-  demoAudit,
-  demoArtifacts,
-  loadFallbackDemoAudit,
   normalizeAuditResult,
   runAuditRequest
 } from "./auditUtils.js";
 
+const idleAudit = {
+  status: "idle",
+  siteId: null,
+  score: null,
+  pagesProcessed: 0,
+  url: "",
+  artifacts: { llmsTxt: null, llmsFullTxt: null, aiIndex: null, pages: [] },
+  metrics: {
+    htmlTokensEstimate: 0,
+    markdownTokensEstimate: 0,
+    estimatedSavingsPercent: 0,
+    crawlMs: 0,
+  },
+  checks: {},
+  issues: [],
+};
+
 export function useAudit() {
   const [url, setUrl] = useState("https://example.com");
-  const [audit, setAudit] = useState(demoAudit);
+  const [audit, setAudit] = useState(idleAudit);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [jobLogs, setJobLogs] = useState(["Demo data loaded."]);
+  const [jobLogs, setJobLogs] = useState(["Checking API connection..."]);
+  const [apiStatus, setApiStatus] = useState({
+    state: "checking",
+    message: "Connecting to backend...",
+    latencyMs: null,
+    version: null,
+  });
 
-  useEffect(() => {
-    loadFallbackDemoAudit()
-      .then((fallback) => setAudit(fallback))
-      .catch(() => setAudit(demoAudit));
+  const refreshApiStatus = useCallback(async () => {
+    setApiStatus((current) => ({ ...current, state: "checking", message: "Connecting..." }));
+    try {
+      const health = await checkApiHealth();
+      setApiStatus({
+        state: "connected",
+        message: `Live API · v${health.version} · ${health.latencyMs}ms`,
+        latencyMs: health.latencyMs,
+        version: health.version,
+      });
+      setJobLogs((current) =>
+        current.some((line) => line.includes("Live API connected"))
+          ? current
+          : ["Live API connected.", "Enter a URL and click Run Audit."]
+      );
+      return true;
+    } catch (err) {
+      setApiStatus({
+        state: "offline",
+        message: "API offline — run npm run dev:server (port 3001)",
+        latencyMs: null,
+        version: null,
+      });
+      setJobLogs([
+        "Backend not reachable at /api/health.",
+        "Start the server: npm run dev:server",
+        err?.message || "Connection failed.",
+      ]);
+      return false;
+    }
   }, []);
 
+  useEffect(() => {
+    refreshApiStatus();
+  }, [refreshApiStatus]);
+
   async function runAudit() {
+    if (apiStatus.state !== "connected") {
+      const ok = await refreshApiStatus();
+      if (!ok) {
+        setError("Cannot run audit — backend API is offline.");
+        return;
+      }
+    }
+
     setIsLoading(true);
     setError("");
-    setJobLogs(["Starting audit..."]);
+    setJobLogs(["Starting live audit...", `Target: ${url}`]);
+
     try {
       const result = await runAuditRequest(url, (job) => {
-        if (Array.isArray(job.logs)) {
-          setJobLogs(job.logs.map((log) => (typeof log === "string" ? log : log.message || JSON.stringify(log))));
+        if (Array.isArray(job.logs) && job.logs.length > 0) {
+          setJobLogs(job.logs);
+        } else if (job.status === "accepted") {
+          setJobLogs((current) => [...current, `Job accepted: ${job.jobId}`]);
         } else if (job.message) {
           setJobLogs((current) => [...current, job.message]);
         }
       });
+
       setAudit(normalizeAuditResult({ ...result, url }));
-      setJobLogs((current) => [...current, "Audit completed."]);
-    } catch {
-      try {
-        const fallback = await loadFallbackDemoAudit();
-        setAudit({ ...fallback, url });
-        setJobLogs(["Live API unavailable.", "Loaded demo fallback."]);
-        setError("Live API unavailable. Showing demo data.");
-      } catch {
-        setAudit({ ...demoAudit, url });
-        setJobLogs(["Live API unavailable.", "Loaded embedded demo fallback."]);
-        setError("Live API unavailable. Showing bundled demo data.");
-      }
+      setJobLogs((current) => [...current, "Audit completed via live API."]);
+    } catch (err) {
+      setError(err?.message || "Audit failed. Is the backend running on port 3001?");
+      setJobLogs((current) => [...current, `Error: ${err?.message || "Audit failed"}`]);
     } finally {
       setIsLoading(false);
     }
   }
 
-  const artifacts = audit?.artifacts || demoArtifacts;
-  const metrics = audit.metrics || demoAudit.metrics;
-  const checks = audit.checks || demoAudit.checks;
-  const issues = Array.isArray(audit.issues) ? audit.issues : [];
+  const isLive = ["completed", "cached"].includes(audit.status);
+  const artifacts = isLive && audit.artifacts?.llmsTxt ? audit.artifacts : idleAudit.artifacts;
+  const metrics = isLive ? audit.metrics : idleAudit.metrics;
+  const checks = isLive ? audit.checks : idleAudit.checks;
+  const issues = isLive && Array.isArray(audit.issues) ? audit.issues : [];
 
   return {
     url,
@@ -66,6 +122,9 @@ export function useAudit() {
     artifacts,
     metrics,
     checks,
-    issues
+    issues,
+    apiStatus,
+    refreshApiStatus,
+    isLive,
   };
 }

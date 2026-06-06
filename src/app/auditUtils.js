@@ -1,3 +1,5 @@
+import { apiFetch, apiJson, apiUrl } from "./api.js";
+
 export const demoArtifacts = {
   llmsTxt: "/generated/demo-glasgate/llms.txt",
   llmsFullTxt: "/generated/demo-glasgate/llms-full.txt",
@@ -125,44 +127,75 @@ export function artifactHref(value) {
   if (value.includes("\n") || value.trim().startsWith("#") || value.trim().startsWith("{")) {
     return `data:text/plain;charset=utf-8,${encodeURIComponent(value)}`;
   }
-  if (value.startsWith("http") || value.startsWith("/")) return value;
+  if (value.startsWith("http") || value.startsWith("/")) return apiUrl(value);
   return `/${value}`;
 }
 
 export async function requestJson(url, options) {
-  const response = await fetch(url, options);
-  if (!response.ok) throw new Error(`Request failed: ${response.status}`);
-  return response.json();
+  const path = url.startsWith("http") ? url.replace(getApiBaseFromUrl(url), "") || url : url;
+  if (url.startsWith("http")) {
+    const response = await fetch(url, options);
+    if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+    return response.json();
+  }
+  return apiJson(path, options);
+}
+
+function getApiBaseFromUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.origin;
+  } catch {
+    return "";
+  }
 }
 
 export function normalizeAuditResult(result) {
+  const live = result.status === "completed" || result.cached === true;
   const pages = result.artifacts?.pages || result.pages?.map((page) => ({
     url: page.url,
+    slug: page.slug,
     markdown: page.markdown || page.markdownUrl,
     json: page.json || page.jsonUrl
-  })) || demoArtifacts.pages;
+  })) || (live ? [] : demoArtifacts.pages);
+
+  const base = live
+    ? {
+        status: result.cached ? "cached" : "completed",
+        score: 0,
+        pagesProcessed: 0,
+        artifacts: { pages: [] },
+        metrics: {},
+        checks: {},
+        issues: [],
+      }
+    : demoAudit;
 
   return {
-    ...demoAudit,
+    ...base,
     ...result,
-    score: result.score ?? result.agentReadinessScore ?? demoAudit.score,
-    pagesProcessed: result.pagesProcessed ?? result.metrics?.totalPages ?? result.pages?.length ?? demoAudit.pagesProcessed,
+    score: result.score ?? result.agentReadinessScore ?? base.score,
+    pagesProcessed:
+      result.pagesProcessed ??
+      result.metrics?.totalPages ??
+      result.pages?.length ??
+      base.pagesProcessed,
     artifacts: {
-      ...demoArtifacts,
+      ...(live ? {} : demoArtifacts),
       ...(result.artifacts || {}),
-      aiIndex: result.artifacts?.aiIndex || demoArtifacts.aiIndex,
-      pages
+      aiIndex: result.artifacts?.aiIndex || (live ? null : demoArtifacts.aiIndex),
+      pages,
     },
-    metrics: { ...demoAudit.metrics, ...(result.metrics || {}) },
-    checks: { ...demoAudit.checks, ...(result.checks || {}) },
-    issues: Array.isArray(result.issues) ? result.issues : []
+    metrics: { ...(live ? {} : demoAudit.metrics), ...(result.metrics || {}) },
+    checks: { ...(live ? {} : demoAudit.checks), ...(result.checks || {}) },
+    issues: Array.isArray(result.issues) ? result.issues : [],
   };
 }
 
 export async function loadFallbackDemoAudit() {
   let demoIndex = embeddedDemoIndex;
   try {
-    demoIndex = await requestJson("/generated/demo-glasgate/ai-index.json");
+    demoIndex = await apiJson("/generated/demo-glasgate/ai-index.json");
   } catch {
     demoIndex = embeddedDemoIndex;
   }
@@ -185,27 +218,37 @@ export async function loadFallbackDemoAudit() {
 }
 
 async function pollAuditResult(pollUrl, onJobUpdate) {
+  const path = pollUrl.startsWith("http") ? pollUrl : pollUrl;
   for (let attempt = 0; attempt < 45; attempt += 1) {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    const job = await requestJson(pollUrl);
+    await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 500 : 2000));
+    const job = await apiJson(path.startsWith("/") ? path : `/api/jobs/${path}`);
     onJobUpdate?.(job);
     if (job.status === "completed") return job.result || job;
-    if (job.status === "failed" || job.error) throw new Error(job.message || job.error || "Audit failed");
+    if (job.status === "failed" || job.error) {
+      throw new Error(job.error || job.message || "Audit failed");
+    }
   }
-  throw new Error("Audit timed out");
+  throw new Error("Audit timed out after 90 seconds");
 }
 
 export async function runAuditRequest(url, onJobUpdate) {
-  const result = await requestJson("/api/audit", {
+  const result = await apiJson("/api/audit", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url })
+    body: JSON.stringify({ url, force: true }),
   });
 
   onJobUpdate?.(result);
-  if (result.jobId || result.pollUrl) {
-    return pollAuditResult(result.pollUrl || `/api/jobs/${result.jobId}`, onJobUpdate);
+
+  if (result.cached && result.status === "completed") {
+    return result;
   }
+
+  if (result.jobId || result.pollUrl) {
+    const pollPath = result.pollUrl || `/api/jobs/${result.jobId}`;
+    return pollAuditResult(pollPath, onJobUpdate);
+  }
+
   return result.result || result;
 }
 
@@ -215,7 +258,7 @@ export async function fetchTextPreview(source) {
   if (typeof source === "string" && (source.includes("\n") || source.trim().startsWith("#") || source.trim().startsWith("{"))) {
     return source;
   }
-  const response = await fetch(artifactHref(source));
+  const response = await apiFetch(source.startsWith("/") || source.startsWith("http") ? source : `/${source}`);
   if (!response.ok) throw new Error(`Preview failed: ${response.status}`);
   const text = await response.text();
   if (artifactHref(source).includes(".json")) {
