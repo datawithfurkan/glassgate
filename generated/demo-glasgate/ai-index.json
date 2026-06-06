@@ -1,0 +1,61 @@
+{
+  "site": {
+    "url": "https://glasgate.ai",
+    "title": "GlassGate",
+    "description": "GlassGate is an Agent Delivery Network that turns websites into structured, verified endpoints for AI agents.",
+    "language": "en",
+    "lastIndexedAt": "2026-06-06T12:00:00.000Z"
+  },
+  "agentReadinessScore": 82,
+  "checks": {
+    "robotsTxt": true,
+    "sitemapXml": true,
+    "llmsTxtExists": false,
+    "canonicalUrls": true,
+    "h1Structure": true,
+    "metaDescription": true,
+    "structuredData": false,
+    "openGraph": true
+  },
+  "artifacts": {
+    "llmsTxt": "/generated/demo-glasgate/llms.txt",
+    "llmsFullTxt": "/generated/demo-glasgate/llms-full.txt"
+  },
+  "pages": [
+    {
+      "url": "https://glasgate.ai/",
+      "title": "GlassGate — Agent Delivery Network",
+      "description": "Turn any website into structured, verified endpoints for AI agents.",
+      "language": "en",
+      "markdownUrl": "/generated/demo-glasgate/pages/home.md",
+      "jsonUrl": "/generated/demo-glasgate/pages/home.json",
+      "wordCount": 412,
+      "hasH1": true,
+      "hasMeta": true
+    },
+    {
+      "url": "https://glasgate.ai/platform",
+      "title": "Platform — GlassGate",
+      "description": "Crawl, clean, structure and deliver web content for AI agents.",
+      "language": "en",
+      "markdownUrl": "/generated/demo-glasgate/pages/platform.md",
+      "jsonUrl": "/generated/demo-glasgate/pages/platform.json",
+      "wordCount": 318,
+      "hasH1": true,
+      "hasMeta": true
+    }
+  ],
+  "metrics": {
+    "totalPages": 2,
+    "totalWords": 730,
+    "htmlTokensEstimate": 18400,
+    "markdownTokensEstimate": 6200,
+    "estimatedSavingsPercent": 66
+  },
+  "issues": [
+    { "severity": "warning", "message": "No llms.txt found on target site — GlassGate will generate one" },
+    { "severity": "info",    "message": "No JSON-LD structured data found" }
+  ],
+  "generator": "glasgate.ai",
+  "generatorVersion": "0.1.0"
+}
