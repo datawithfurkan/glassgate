@@ -81,7 +81,7 @@ function Logo() {
   return (
     <button className="logo" onClick={() => window.dispatchEvent(new CustomEvent("goto", { detail: "Platform" }))}>
       <LogoMark />
-      <span>glasgate.ai</span>
+      <span>glassgate.app</span>
     </button>
   );
 }
@@ -155,7 +155,7 @@ function Processor() {
     <div className="processor float-b">
       <div className="dot-field" />
       <LogoMark />
-      <strong>glasgate.ai</strong>
+      <strong>glassgate.app</strong>
       <span>
         <i /> Processing
       </span>
@@ -278,7 +278,7 @@ function DemoBand({ compact = false }) {
   return (
     <section className={`demo-band page-shell ${compact ? "compact" : ""}`}>
       <div>
-        <h2>{compact ? "Ready to build AI-ready pipelines?" : "See glasgate.ai in action."}</h2>
+        <h2>{compact ? "Ready to build AI-ready pipelines?" : "See GlassGate in action."}</h2>
         <p>{compact ? "Simple setup. Structured output. Enterprise control." : "Book a personalized demo with our team."}</p>
       </div>
       <button className="primary-button">Book a demo <ArrowRight size={18} /></button>
@@ -423,7 +423,7 @@ function Docs() {
         <div className="docs-copy">
           <div className="pill"><Sparkles size={15} /> Docs</div>
           <h1>Docs</h1>
-          <p>Build, integrate, and scale with glasgate.ai.</p>
+          <p>Build, integrate, and scale with GlassGate.</p>
           <label className="search-box">
             <Search size={25} />
             <input placeholder="Search the documentation..." />

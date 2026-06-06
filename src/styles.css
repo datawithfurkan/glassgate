@@ -1363,6 +1363,10 @@ kbd {
     width: 100%;
   }
 
+  .dot-field {
+    inset: 0;
+  }
+
   .pipeline-rail,
   .feature-grid,
   .docs-grid,
