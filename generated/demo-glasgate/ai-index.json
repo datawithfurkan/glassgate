@@ -1,10 +1,20 @@
 {
+  "version": "1.0",
   "site": {
-    "url": "https://glasgate.ai",
-    "title": "glasgate.ai",
-    "description": "AI-ready data pipelines for the web. Turn any website into clean, structured data for AI agents and automations.",
+    "name": "glasgate.ai",
+    "baseUrl": "https://glasgate.ai",
     "language": "en",
-    "lastIndexedAt": "2026-06-06T12:00:00.000Z"
+    "generatedAt": "2026-06-06T12:00:00.000Z"
+  },
+  "crawl": {
+    "strategy": "value-based",
+    "source": "sitemap+xml+internal_links",
+    "pagesDiscovered": 12,
+    "pagesSelected": 2,
+    "pagesProcessed": 2,
+    "robotsTxtStatus": "found",
+    "sitemapStatus": "found",
+    "crawlMs": 1240
   },
   "agentReadinessScore": 82,
   "checks": {
@@ -17,49 +27,65 @@
     "structuredData": false,
     "openGraph": true
   },
-  "artifacts": {
-    "llmsTxt": "/generated/demo-glasgate/llms.txt",
-    "llmsFullTxt": "/generated/demo-glasgate/llms-full.txt",
-    "aiIndex": "/generated/demo-glasgate/ai-index.json"
-  },
   "pages": [
     {
+      "id": "home",
       "url": "https://glasgate.ai/",
+      "canonicalUrl": "https://glasgate.ai/",
       "title": "glasgate.ai — AI-ready data pipelines for the web",
       "description": "Turn any website into clean, structured, AI-ready data for AI agents and automations.",
+      "type": "homepage",
       "language": "en",
-      "bodyText": "Turn any website into clean, structured, AI-ready data for AI agents, LLMs, RAG systems, search, automations, and business workflows.",
-      "markdownUrl": "/generated/demo-glasgate/pages/home.md",
-      "jsonUrl": "/generated/demo-glasgate/pages/home.json",
+      "lastModified": "2026-06-06",
+      "contentHash": "sha256:a1b2c3d4e5f67890",
+      "markdownUrl": "https://glasgate.ai/pages/home.md",
+      "jsonUrl": "https://glasgate.ai/pages/home.json",
+      "hostedMarkdownUrl": "/generated/demo-glasgate/pages/home.md",
+      "hostedJsonUrl": "/generated/demo-glasgate/pages/home.json",
+      "schemaTypes": [],
+      "importance": 1,
       "wordCount": 412,
-      "hasH1": true,
-      "hasMeta": true
+      "status": "ready"
     },
     {
+      "id": "platform",
       "url": "https://glasgate.ai/platform",
+      "canonicalUrl": "https://glasgate.ai/platform",
       "title": "Platform — glasgate.ai",
       "description": "One platform for AI-ready data pipelines.",
+      "type": "product",
       "language": "en",
-      "bodyText": "Data extraction, structured outputs, APIs and delivery, observability.",
-      "markdownUrl": "/generated/demo-glasgate/pages/platform.md",
-      "jsonUrl": "/generated/demo-glasgate/pages/platform.json",
+      "lastModified": "2026-06-06",
+      "contentHash": "sha256:b2c3d4e5f678901a",
+      "markdownUrl": "https://glasgate.ai/pages/platform.md",
+      "jsonUrl": "https://glasgate.ai/pages/platform.json",
+      "hostedMarkdownUrl": "/generated/demo-glasgate/pages/platform.md",
+      "hostedJsonUrl": "/generated/demo-glasgate/pages/platform.json",
+      "schemaTypes": [],
+      "importance": 0.72,
       "wordCount": 318,
-      "hasH1": true,
-      "hasMeta": true
+      "status": "ready"
     }
   ],
+  "artifacts": {
+    "llmsTxt": "https://glasgate.ai/llms.txt",
+    "llmsFullTxt": "https://glasgate.ai/llms-full.txt",
+    "hostedLlmsTxt": "/generated/demo-glasgate/llms.txt",
+    "hostedLlmsFullTxt": "/generated/demo-glasgate/llms-full.txt",
+    "aiIndex": "https://glasgate.ai/ai-index.json",
+    "hostedAiIndex": "/generated/demo-glasgate/ai-index.json"
+  },
   "metrics": {
     "totalPages": 2,
     "totalWords": 730,
     "htmlTokensEstimate": 18400,
     "markdownTokensEstimate": 6200,
-    "estimatedSavingsPercent": 66,
-    "crawlMs": 1240
+    "estimatedSavingsPercent": 66
   },
   "issues": [
     { "severity": "warning", "message": "No llms.txt found on target site — glasgate.ai will generate one" },
     { "severity": "info", "message": "No JSON-LD structured data found" }
   ],
   "generator": "glasgate.ai",
-  "generatorVersion": "0.1.0"
+  "generatorVersion": "0.2.0"
 }

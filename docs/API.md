@@ -384,7 +384,7 @@ List all indexed sites. Reads from `generated/` directory.
 
 Full site index for a site (reads `ai-index.json`).
 
-**Response 200:** `ai-index.json` schema with `site`, `agentReadinessScore`, `artifacts`, `pages`, `metrics`, `checks`, and `issues`.
+**Response 200:** `ai-index.json` v1.0 schema with `version`, `site`, `crawl`, `pages[]` (importance, type, contentHash), `artifacts`, `agentReadinessScore`, `metrics`, `checks`, and `issues`.
 
 **Response 404:**
 ```json
@@ -567,7 +567,9 @@ All errors include `reqId` for tracing.
 | `NODE_ENV` | `development` | `production` enables JSON logs |
 | `GLASGATE_API_KEY` | — | Enable API key auth (disabled if unset) |
 | `CRAWL_TIMEOUT` | `8000` | Per-page fetch timeout (ms) |
-| `MAX_PAGES` | `5` | Max pages per audit |
+| `MAX_PAGES` | `10` | Max canonical pages per audit (value-ranked) |
+| `MAX_SITEMAP_URLS` | `100` | Max URLs read from sitemap for discovery |
+| `MAX_LLMS_TXT_PAGES` | `8` | Max pages in curated llms.txt |
 | `MAX_SITEMAP_URLS` | `20` | Max URLs read from sitemap |
 | `CACHE_TTL_MS` | `600000` | Result cache TTL (10 min) |
 | `GENERATED_DIR` | `./generated` | Artifact output directory |

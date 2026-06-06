@@ -35,9 +35,9 @@ POST /api/audit
 │  Audit Pipeline                                     │
 │                                                     │
 │  Validator → RobotsChecker (403 if blocked)        │
-│           → Fetcher → SitemapParser → CrawlQueue   │
-│           → [for each URL]                         │
-│             Fetcher → Extractor → Normalizer       │
+│           → SitemapParser → NavLinks (homepage)  │
+│           → UrlFilter → UrlRanker → CrawlQueue   │
+│           → [for each URL: robots + fetch]       │
 │           → Scorer                                 │
 │           → Generators (5x)                        │
 │           → Store (disk write)                     │
@@ -72,6 +72,9 @@ server/
     ├── fetcher.js              HTTP fetch with timeout + user-agent
     ├── robots.js               robots.txt fetch + block-based parser
     ├── sitemap.js              sitemap.xml fetch + parse + crawl queue
+    ├── urlFilter.js            exclude login/cart/filter/search/tracking URLs
+    ├── urlRanker.js            value-based URL priority + page type detection
+    ├── contentHash.js          sha256 content hashes for artifacts
     ├── extractor.js            HTML → PageData
     ├── normalizer.js           Clean and trim extracted content
     ├── scorer.js               AI Readiness Score 0–100 (additive)

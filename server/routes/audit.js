@@ -2,7 +2,7 @@ import { Router } from "express";
 import { rateLimit } from "../middleware/rateLimit.js";
 import { validateUrl, siteIdFromUrl, pageSlugFromUrl } from "../lib/validator.js";
 import { fetchPage, fetchText } from "../lib/fetcher.js";
-import { fetchRobots } from "../lib/robots.js";
+import { fetchRobots, isAllowed } from "../lib/robots.js";
 import { fetchSitemap, buildCrawlQueue } from "../lib/sitemap.js";
 import { extractPage } from "../lib/extractor.js";
 import { normalizePage } from "../lib/normalizer.js";
@@ -14,6 +14,7 @@ import { generatePageJson } from "../lib/generators/json.js";
 import { generateLlmsTxt } from "../lib/generators/llmsTxt.js";
 import { generateLlmsFullTxt } from "../lib/generators/llmsFullTxt.js";
 import { generateAiIndex } from "../lib/generators/aiIndex.js";
+import { selectCuratedPages } from "../lib/urlRanker.js";
 import {
   createJob, markRunning, markCompleted, markFailed,
   appendLog, generateJobId,
@@ -65,15 +66,6 @@ function auditErrorResponse(err, req, jobId) {
   };
 }
 
-/**
- * POST /api/audit
- *
- * Start an async audit job. Returns immediately with a jobId.
- * Poll GET /api/jobs/:jobId for status and result.
- *
- * Body: { url: string, force?: boolean }
- *   force — bypass cache and re-crawl even if result exists
- */
 router.post("/audit", auditLimiter, async (req, res) => {
   const { url, force = false } = req.body;
   const reqLog = logger.child({ reqId: req.requestId });
@@ -126,13 +118,6 @@ router.post("/audit", auditLimiter, async (req, res) => {
   });
 });
 
-/**
- * POST /api/audit/sync
- *
- * Synchronous audit — waits for completion and returns the full result.
- *
- * Body: { url: string, force?: boolean }
- */
 router.post("/audit/sync", auditLimiter, async (req, res) => {
   const { url, force = false } = req.body;
   const reqLog = logger.child({ reqId: req.requestId });
@@ -175,13 +160,9 @@ router.post("/audit/sync", auditLimiter, async (req, res) => {
   }
 });
 
-/**
- * Core audit logic — shared by both sync and async routes.
- * @returns {Promise<Object>} Full audit result
- */
 async function runAudit(jobId, baseUrl, siteId, log) {
   markRunning(jobId);
-  appendLog(jobId, `Starting audit for ${baseUrl}`);
+  appendLog(jobId, `Starting value-based audit for ${baseUrl}`);
 
   const startTime = Date.now();
 
@@ -208,19 +189,54 @@ async function runAudit(jobId, baseUrl, siteId, log) {
   const sitemap = await fetchSitemap(baseUrl, robots.raw);
   siteChecks.sitemapXml = sitemap.exists;
 
-  const queue = buildCrawlQueue(baseUrl, sitemap.urls, config.maxPages);
-  appendLog(jobId, `Crawl queue: ${queue.length} URL(s)`);
+  let navLinks = [];
+  appendLog(jobId, "Crawling homepage for navigation links");
+  const homepageResult = await fetchPage(baseUrl);
+  if (homepageResult.ok) {
+    const homepageRaw = extractPage(homepageResult.html, homepageResult.finalUrl || baseUrl);
+    navLinks = homepageRaw.internalLinks.map((link) => link.url).slice(0, 20);
+    appendLog(jobId, `  ↳ Found ${navLinks.length} internal link candidate(s)`);
+  } else {
+    appendLog(jobId, `  ↳ Homepage prefetch failed: ${homepageResult.error}`);
+  }
+
+  const queueResult = buildCrawlQueue(baseUrl, sitemap.urls, navLinks, config.maxPages);
+  const queue = queueResult.queue;
+  appendLog(
+    jobId,
+    `Crawl queue: ${queue.length} selected from ${queueResult.discovered} discovered URL(s)`
+  );
 
   const crawledPages = [];
   const htmlSamples = [];
+  const fetchedUrls = new Set();
 
   for (const pageUrl of queue) {
+    if (!isAllowed(robots.raw, pageUrl, robots.botName)) {
+      appendLog(jobId, `Skipping ${pageUrl} (robots.txt)`);
+      continue;
+    }
+
     appendLog(jobId, `Crawling ${pageUrl}`);
-    const result = await fetchPage(pageUrl);
+
+    let result;
+    if (
+      homepageResult.ok &&
+      !fetchedUrls.has(pageUrl) &&
+      (pageUrl.replace(/\/$/, "") === baseUrl.replace(/\/$/, ""))
+    ) {
+      result = homepageResult;
+    } else {
+      result = await fetchPage(pageUrl);
+    }
+
+    fetchedUrls.add(pageUrl);
+
     if (!result.ok) {
       appendLog(jobId, `  ↳ Failed: ${result.error}`);
       continue;
     }
+
     htmlSamples.push(result.html);
     const raw = extractPage(result.html, result.finalUrl || pageUrl);
     const normalized = normalizePage(raw);
@@ -246,12 +262,18 @@ async function runAudit(jobId, baseUrl, siteId, log) {
   }));
 
   appendLog(jobId, "Generating artifacts");
+  const curatedPages = selectCuratedPages(crawledPages, baseUrl, config.maxLlmsTxtPages);
+
   const siteData = {
     url: baseUrl,
     title: crawledPages[0]?.title || new URL(baseUrl).hostname,
     description: crawledPages[0]?.description || "",
     language: crawledPages[0]?.language || "en",
-    pages: pageSlugs,
+    pages: curatedPages.map((p) => ({
+      url: p.url,
+      title: p.title,
+      description: p.description,
+    })),
     pageSlugs,
   };
 
@@ -269,9 +291,18 @@ async function runAudit(jobId, baseUrl, siteId, log) {
   const metrics = compareTokens(allHtml, allMarkdown);
   const crawlMs = Date.now() - startTime;
 
-  const llmsTxt     = generateLlmsTxt(siteData, siteId);
+  const crawlMeta = {
+    discovered: queueResult.discovered,
+    selected: queueResult.selected,
+    source: sitemap.exists ? "sitemap+xml+internal_links" : "homepage+internal_links",
+    robotsTxtStatus: robots.exists ? "found" : "missing",
+    sitemapStatus: sitemap.exists ? "found" : "missing",
+    crawlMs,
+  };
+
+  const llmsTxt = generateLlmsTxt(siteData, siteId, { curatedPages });
   const llmsFullTxt = generateLlmsFullTxt(crawledPages, baseUrl);
-  const aiIndex     = generateAiIndex(siteData, crawledPages, scoreResult, siteId, metrics, crawlMs);
+  const aiIndex = generateAiIndex(siteData, crawledPages, scoreResult, siteId, metrics, crawlMeta);
 
   appendLog(jobId, "Saving artifacts to disk");
   await saveSiteArtifacts(siteId, { llmsTxt, llmsFullTxt, aiIndex, pages: pageArtifacts });
@@ -282,21 +313,25 @@ async function runAudit(jobId, baseUrl, siteId, log) {
     siteId,
     url: baseUrl,
     score: scoreResult.score,
-    pagesFound: queue.length,
+    crawlStrategy: "value-based",
+    pagesDiscovered: queueResult.discovered,
+    pagesSelected: queueResult.selected,
+    pagesFound: queueResult.discovered,
     pagesProcessed: crawledPages.length,
     artifacts: {
-      llmsTxt:     `/generated/${siteId}/llms.txt`,
+      llmsTxt: `/generated/${siteId}/llms.txt`,
       llmsFullTxt: `/generated/${siteId}/llms-full.txt`,
-      aiIndex:     `/generated/${siteId}/ai-index.json`,
+      aiIndex: `/generated/${siteId}/ai-index.json`,
       pages: pageSlugs.map(({ url: u, slug }) => ({
         url: u,
+        slug,
         markdown: `/generated/${siteId}/pages/${slug}.md`,
-        json:     `/generated/${siteId}/pages/${slug}.json`,
+        json: `/generated/${siteId}/pages/${slug}.json`,
       })),
     },
     metrics: {
-      htmlTokensEstimate:      metrics.htmlEstimate,
-      markdownTokensEstimate:  metrics.markdownEstimate,
+      htmlTokensEstimate: metrics.htmlEstimate,
+      markdownTokensEstimate: metrics.markdownEstimate,
       estimatedSavingsPercent: metrics.estimatedSavingsPercent,
       crawlMs,
     },
