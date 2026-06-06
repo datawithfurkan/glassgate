@@ -144,6 +144,32 @@ const demoAudit = {
   ]
 };
 
+const motionCodeLines = [
+  "<h1>Agent-ready product data</h1>",
+  "<nav><a href='/docs'>Docs</a></nav>",
+  "<p>Clean page content, no chrome.</p>",
+  "{ title, description, faq, pricing }",
+  "canonical: https://example.com/",
+  "llms.txt -> markdown corpus",
+  "ai-index.json -> searchable map",
+  "tokens: 18,420 -> 4,620"
+];
+
+const motionOutputRows = [
+  [FileText, "llms.txt", "Published"],
+  [FileJson, "ai-index.json", "Structured"],
+  [Braces, "pages.json", "Queryable"],
+  [Bot, "Agent API", "Ready"]
+];
+
+const motionParticles = Array.from({ length: 84 }, (_, index) => ({
+  "--x": `${(index % 12) * 10 - 48}px`,
+  "--y": `${Math.floor(index / 12) * 22 - 80}px`,
+  "--d": `${(index % 17) * 0.09}s`,
+  "--s": `${2 + (index % 4)}px`,
+  "--o": `${0.34 + (index % 5) * 0.1}`
+}));
+
 const formatNumber = (value) =>
   Number.isFinite(Number(value)) ? new Intl.NumberFormat("en-US").format(Number(value)) : "0";
 
@@ -501,23 +527,84 @@ function HowItWorks() {
           <h1>From website to structured agent data.</h1>
           <p>Five steps. One clean pipeline.</p>
         </div>
-        <FlowBoard />
+        <AgentMotionGraphic />
       </section>
       <ArchitectureStrip />
     </>
   );
 }
 
-function FlowBoard() {
+function AgentMotionGraphic() {
   return (
-    <div className="flow-board">
-      <div className="flow-track" />
-      {pipeline.map(({ icon: Icon, title }, index) => (
-        <div className="flow-node" style={{ "--n": index }} key={title}>
-          <Icon size={30} />
-          <strong>{title}</strong>
+    <div className="agent-motion" aria-label="Animated transformation from website content to agent-ready files">
+      <div className="motion-pipeline">
+        {pipeline.slice(0, 4).map(({ icon: Icon, title }, index) => (
+          <span key={title} style={{ "--n": index }}>
+            <Icon size={16} />
+            {title}
+          </span>
+        ))}
+      </div>
+      <div className="motion-stage">
+        <div className="motion-code">
+          {motionCodeLines.map((line, index) => (
+            <span key={`${line}-${index}`} style={{ "--n": index }}>
+              {line}
+            </span>
+          ))}
         </div>
-      ))}
+        <div className="motion-source-card">
+          <div className="motion-browser">
+            <i />
+            <i />
+            <i />
+            <strong>source website</strong>
+          </div>
+          <div className="motion-site-preview">
+            <nav>
+              <span>Docs</span>
+              <span>Pricing</span>
+              <span>FAQ</span>
+            </nav>
+            <h3>Business content built for humans.</h3>
+            <p>Pages, docs, prices, support text, schema gaps, and changing site content.</p>
+            <div className="motion-site-grid">
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
+        </div>
+        <div className="motion-converter">
+          <div className="motion-token">
+            <small>Token reduction</small>
+            <strong>72% less</strong>
+          </div>
+          <div className="motion-beam" />
+          <div className="motion-particles">
+            {motionParticles.map((style, index) => (
+              <i key={index} style={style} />
+            ))}
+          </div>
+        </div>
+        <div className="motion-output">
+          <div className="motion-output-header">
+            <LogoMark small />
+            <span>Agent-ready mirror</span>
+          </div>
+          <strong className="motion-score">92</strong>
+          <small>AI readiness score</small>
+          <div className="motion-output-list">
+            {motionOutputRows.map(([Icon, name, status]) => (
+              <div key={name}>
+                <Icon size={17} />
+                <span>{name}</span>
+                <em>{status}</em>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
