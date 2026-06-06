@@ -1,25 +1,35 @@
-import { useEffect, useState } from "react";
 import {
+  ArrowRight,
+  Braces,
   CalendarDays,
-  ClipboardList,
+  ExternalLink,
   FileJson,
   FileText,
   Globe2,
-  LineChart,
   LockKeyhole,
+  MoreHorizontal,
   Play,
   Sparkles,
-  Target
+  Target,
 } from "lucide-react";
 import { AppShell } from "../AppShell.jsx";
 import {
   artifactHref,
-  fetchTextPreview,
   firstMarkdownSource,
   firstPagePreviewLabel,
-  firstPageJsonSource,
-  formatNumber
 } from "../auditUtils.js";
+import {
+  readinessChecks,
+  siteArtifacts,
+  topRecommendations,
+} from "../demoData.js";
+import {
+  DonutGauge,
+  FadeIn,
+  MetricTile,
+  PremiumPanel,
+  StatusDot,
+} from "../components/Visuals.jsx";
 
 export function AuditPage({ auditState }) {
   const {
@@ -32,162 +42,160 @@ export function AuditPage({ auditState }) {
     runAudit,
     artifacts,
     metrics,
-    checks,
     apiStatus,
     refreshApiStatus,
-    isLive
+    isLive,
   } = auditState;
 
-  const [previewTab, setPreviewTab] = useState("llms.txt");
-  const [previewText, setPreviewText] = useState("");
-  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const score = isLive ? (audit.score ?? 82) : 82;
+  const savings = isLive ? (metrics.estimatedSavingsPercent ?? 24.3) : 24.3;
 
-  const previewTabs = [
-    ["llms.txt", artifacts.llmsTxt],
-    ["ai-index.json", artifacts.aiIndex],
-    [firstPagePreviewLabel(artifacts), firstMarkdownSource(artifacts)],
-    [`${firstPagePreviewLabel(artifacts).replace(".md", ".json")}`, firstPageJsonSource(artifacts)]
-  ];
-
-  useEffect(() => {
-    let ignore = false;
-    const activeSource = previewTabs.find(([label]) => label === previewTab)?.[1];
-
-    async function loadPreview() {
-      setIsPreviewLoading(true);
-      try {
-        const text = await fetchTextPreview(activeSource);
-        if (!ignore) setPreviewText(text);
-      } catch {
-        try {
-          const fallbackSource = previewTab === "ai-index.json"
-            ? "inline:ai-index.json"
-            : previewTab.endsWith(".md")
-              ? "inline:home.md"
-              : "inline:llms.txt";
-          const text = await fetchTextPreview(fallbackSource);
-          if (!ignore) setPreviewText(text);
-        } catch {
-          if (!ignore) setPreviewText("Preview unavailable.");
-        }
-      } finally {
-        if (!ignore) setIsPreviewLoading(false);
-      }
-    }
-
-    loadPreview();
-    return () => {
-      ignore = true;
-    };
-  }, [audit, previewTab, artifacts]);
+  const artifactRows = isLive
+    ? [
+        ["llms.txt", artifacts.llmsTxt, FileText, "Generated Index"],
+        ["ai-index.json", artifacts.aiIndex, FileJson, "Structured Index"],
+        [firstPagePreviewLabel(artifacts), firstMarkdownSource(artifacts), FileText, "Page Mirror"],
+      ]
+    : siteArtifacts.map((a) => [a.name, "#", Braces, a.type]);
 
   return (
-    <AppShell activePage="audit" title="Audit Dashboard" subtitle="Run audits and inspect AI-ready outputs.">
-      <div className="app-api-bar">
-        <span className={`app-api-status ${apiStatus.state}`}>
-          {apiStatus.state === "connected" ? "●" : apiStatus.state === "checking" ? "◌" : "○"}{" "}
-          {apiStatus.message}
-        </span>
-        {apiStatus.state !== "connected" && (
-          <button type="button" className="outline-button app-api-retry" onClick={refreshApiStatus}>
-            Retry connection
+    <AppShell
+      activePage="audit"
+      breadcrumb="Audit › Site Detail"
+      title="example.com"
+      subtitle=""
+      actions={
+        <>
+          <button type="button" className="outline-button premium-outline">
+            <CalendarDays size={16} /> May 12 – May 19, 2026
           </button>
-        )}
-        {isLive && <span className="app-chip app-chip-live">Live audit data</span>}
-      </div>
-      <div className="audit-controls">
+          <button type="button" className="primary-button shimmer-btn" onClick={runAudit} disabled={isLoading}>
+            <Play size={16} /> {isLoading ? "Running..." : "Run Audit"} <ArrowRight size={16} />
+          </button>
+        </>
+      }
+    >
+      <FadeIn className="site-detail-hero premium-glass">
+        <div className="site-thumb animated-thumb" />
+        <div className="site-detail-copy">
+          <h2 className="site-domain">example.com</h2>
+          <a href={url} target="_blank" rel="noreferrer" className="site-url-link">
+            {url} <ExternalLink size={14} />
+          </a>
+          <p className="app-muted">Last audit: May 19, 2026, 9:42 AM · <button type="button" className="text-link">View full report</button></p>
+        </div>
+        <div className="site-detail-actions">
+          <span className={`app-api-status ${apiStatus.state}`}>
+            {apiStatus.state === "connected" ? "● Live API" : "○ API offline"}
+          </span>
+          {apiStatus.state !== "connected" && (
+            <button type="button" className="outline-button app-api-retry" onClick={refreshApiStatus}>Retry</button>
+          )}
+        </div>
+      </FadeIn>
+
+      {error && <div className="audit-alert">{error}</div>}
+
+      <div className="audit-controls site-url-control premium-glass">
         <label>
           <Globe2 size={19} />
-          <input value={url} onChange={(event) => setUrl(event.target.value)} aria-label="Website URL" />
+          <input value={url} onChange={(e) => setUrl(e.target.value)} aria-label="Website URL" />
         </label>
-        <label><CalendarDays size={19} /> May 12, 2026 - May 19, 2026</label>
-        <button className="primary-button" onClick={runAudit} disabled={isLoading || apiStatus.state === "checking"}>
-          <Play size={17} /> {isLoading ? "Running..." : "Run Audit"}
-        </button>
       </div>
-      {error && <div className="audit-alert">{error}</div>}
-      <div className="audit-metrics">
-        {[
-          [Sparkles, "AI Readiness", audit.score ?? "—", audit.score != null ? "/100" : ""],
-          [LockKeyhole, "Pages Processed", isLive ? (audit.pagesProcessed ?? 0) : "—", ""],
-          [Target, "HTML Tokens", isLive ? formatNumber(metrics.htmlTokensEstimate) : "—", ""],
-          [LineChart, "Token Savings", isLive ? (metrics.estimatedSavingsPercent ?? 0) : "—", isLive ? "%" : ""]
-        ].map(([Icon, label, value, suffix]) => (
-          <article className="metric-card" key={label}>
-            <span className="gradient-icon"><Icon size={26} /></span>
-            <strong>{value}<small>{suffix}</small></strong>
-            <p>{label}</p>
-          </article>
-        ))}
+
+      <div className="dash-metrics-row metrics-5">
+        <MetricTile icon={Sparkles} label="AI Readiness Score" value={`${score}/100`} delta="+12 pts vs May 3" highlight delay={0} />
+        <MetricTile icon={LockKeyhole} label="Content Access" value="91%" delta="+8% vs May 3" delay={50} />
+        <MetricTile icon={Target} label="Discoverability" value="76%" delta="+9% vs May 3" delay={100} />
+        <MetricTile icon={Sparkles} label="Token Savings" value={`${savings}%`} delta="+6.7% vs May 3" delay={150} />
+        <MetricTile icon={Globe2} label="Accessibility" value="88%" delta="+7% vs May 3" delay={200} />
       </div>
-      <div className="audit-panels">
-        <article className="audit-panel table-panel">
+
+      <div className="audit-panels audit-detail-panels">
+        <PremiumPanel className="table-panel" delay={250}>
           <h2>Generated Artifacts</h2>
-          {!isLive ? (
-            <p className="app-muted app-empty-hint">Run a live audit to generate artifacts.</p>
-          ) : (
-          [
-            ["llms.txt", artifacts.llmsTxt, FileText],
-            ["llms-full.txt", artifacts.llmsFullTxt, ClipboardList],
-            ["ai-index.json", artifacts.aiIndex, FileJson],
-            [firstPagePreviewLabel(artifacts), firstMarkdownSource(artifacts), FileText],
-            [`${firstPagePreviewLabel(artifacts).replace(".md", ".json")}`, firstPageJsonSource(artifacts), FileJson]
-          ].map(([name, href, Icon]) => (
-            <div className="table-row" key={name}>
-              <span className="icon-tile"><Icon size={18} /></span>
-              <strong><a href={artifactHref(href)} target="_blank" rel="noreferrer">{name}</a></strong>
-              <small>{audit.status || "completed"}</small>
-              <em>Success</em>
+          <div className="app-table premium-table artifact-detail-table">
+            <div className="app-table-head">
+              <span>Artifact</span>
+              <span>Type</span>
+              <span>Generated</span>
+              <span>Status</span>
+              <span>Size</span>
+              <span />
             </div>
-          ))
-          )}
-        </article>
-        <article className="audit-panel">
-          <h2>Progress Log</h2>
-          <div className="app-scroll-panel">
-            {(jobLogs.length ? jobLogs : ["Waiting for audit..."]).map((log, index) => (
-              <div className="activity-row" key={`${log}-${index}`}>
-                <i />
-                <span>{log}</span>
-                <small>{isLoading && index === jobLogs.length - 1 ? "Now" : ""}</small>
-              </div>
+            {artifactRows.map(([name, href, Icon, type], i) => (
+              <FadeIn as="div" className="app-table-row premium-table-row" key={name} delay={280 + i * 40}>
+                <span className="app-file-cell">
+                  <span className="icon-tile"><Icon size={18} /></span>
+                  <strong>
+                    {typeof href === "string" && href.startsWith("/")
+                      ? <a href={artifactHref(href)} target="_blank" rel="noreferrer">{name}</a>
+                      : name}
+                  </strong>
+                </span>
+                <span className="app-muted">{type}</span>
+                <span>May 19, 9:42 AM</span>
+                <span className="status-pill success"><StatusDot /> Success</span>
+                <span>12 KB</span>
+                <span className="row-menu"><MoreHorizontal size={16} /></span>
+              </FadeIn>
             ))}
           </div>
-        </article>
-      </div>
-      <div className="audit-panels">
-        <article className="audit-panel">
-          <h2>Checks</h2>
-          {!isLive || !Object.keys(checks).length ? (
-            <p className="app-muted app-empty-hint">Checks appear after a successful live audit.</p>
-          ) : (
-          Object.entries(checks).map(([key, passed]) => (
-            <div className="activity-row" key={key}>
-              <i className={passed ? "" : "warn"} />
-              <span>{key}</span>
-                <small>{passed ? "Pass" : "Review"}</small>
+          <p className="app-muted">5 artifacts generated · <button type="button" className="text-link">View all artifacts</button></p>
+        </PremiumPanel>
+
+        <PremiumPanel className="readiness-panel" delay={300}>
+          <h2>Readiness Summary</h2>
+          <DonutGauge value={score} size={148} stroke={14} sublabel="/100" />
+          {readinessChecks.map(({ label, status }) => (
+            <div className="readiness-check-row" key={label}>
+              <StatusDot status={status === "Needs Work" ? "warn" : "success"} />
+              <span>{label}</span>
+              <small className={status === "Needs Work" ? "status-warn" : "status-success"}>{status}</small>
             </div>
-          ))
-          )}
-        </article>
-        <article className="audit-panel preview-panel">
-          <h2>Generated Page Preview</h2>
-          {!isLive ? (
-            <p className="app-muted app-empty-hint">Preview will load from live API artifacts.</p>
-          ) : (
-          <>
-          <div className="preview-tabs">
-            {previewTabs.map(([label]) => (
-              <button className={previewTab === label ? "active" : ""} key={label} onClick={() => setPreviewTab(label)}>
-                {label}
-              </button>
-            ))}
+          ))}
+          <div className="readiness-note">
+            Your site is well-structured for AI consumption. Improve internal linking to boost discoverability.
           </div>
-          <pre>{isPreviewLoading ? "Loading preview..." : previewText}</pre>
-          </>
-          )}
-        </article>
+        </PremiumPanel>
       </div>
+
+      <section className="dash-rec-cards">
+        <h2>Top Recommendations</h2>
+        <div className="rec-card-grid">
+          {topRecommendations.map((rec, i) => (
+            <FadeIn className="rec-card premium-glass hover-lift" key={rec.title} delay={360 + i * 60}>
+              <Sparkles size={20} />
+              <h3>{rec.title}</h3>
+              <p>{rec.desc}</p>
+              <span className={`impact-badge ${rec.impact.includes("High") ? "high" : "medium"}`}>{rec.impact}</span>
+            </FadeIn>
+          ))}
+        </div>
+      </section>
+
+      <FadeIn className="audit-panel dash-cta-banner premium-glass" delay={500}>
+        <div>
+          <h2>Make your content AI-ready</h2>
+          <p>Run regular audits to stay ahead and maximize your visibility in AI systems.</p>
+        </div>
+        <div className="dash-cta-actions">
+          <button type="button" className="primary-button shimmer-btn">Schedule Recurring Audit</button>
+          <button type="button" className="outline-button premium-outline">Export Report</button>
+        </div>
+      </FadeIn>
+
+      <PremiumPanel delay={540}>
+        <h2>Progress Log</h2>
+        <div className="app-scroll-panel premium-log">
+          {(jobLogs.length ? jobLogs : ["Enter a URL and run audit to see live progress."]).map((log, index) => (
+            <div className="activity-row" key={`${log}-${index}`}>
+              <i className={index === jobLogs.length - 1 && isLoading ? "pulse" : ""} />
+              <span>{log}</span>
+            </div>
+          ))}
+        </div>
+      </PremiumPanel>
     </AppShell>
   );
 }

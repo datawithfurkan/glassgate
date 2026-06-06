@@ -4,7 +4,10 @@ import react from "@vitejs/plugin-react";
 const API_TARGET = "http://127.0.0.1:3001";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react({ jsxRuntime: "automatic" })],
+  esbuild: {
+    jsx: "automatic",
+  },
   server: {
     host: "127.0.0.1",
     proxy: {

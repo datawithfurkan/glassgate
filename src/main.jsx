@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { AppRouter, isAppRoute } from "./app/AppRouter.jsx";
+import { AuthRouter, isAuthRoute } from "./auth/AuthRouter.jsx";
 import { goToAudit } from "./app/navigation.js";
 import {
   ArrowRight,
@@ -669,7 +670,11 @@ function Company() {
 
 function App() {
   const [activeSection, setActiveSection] = useState("platform");
-  const [route, setRoute] = useState(() => (isAppRoute() ? "app" : "home"));
+  const [route, setRoute] = useState(() => {
+    if (isAuthRoute()) return "auth";
+    if (isAppRoute()) return "app";
+    return "home";
+  });
 
   useEffect(() => {
     const updateRoute = () => {
@@ -708,6 +713,10 @@ function App() {
     window.addEventListener("scroll", updateActiveSection, { passive: true });
     return () => window.removeEventListener("scroll", updateActiveSection);
   }, []);
+
+  if (route === "auth") {
+    return <AuthRouter />;
+  }
 
   if (route === "app") {
     return <AppRouter />;
